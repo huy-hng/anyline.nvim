@@ -34,13 +34,20 @@ end
 
 --- start indentline autocmds
 function M.start()
+
+
+
+
+
+
+
 	Augroup('IndentLine', {
 		Autocmd({ 'CursorMoved', 'CursorMovedI' }, context.update_context),
 		Autocmd('WinScrolled', M.refresh),
 		Autocmd('WinLeave', context.unset_context),
 		Autocmd({
-			'CursorHold',
-			'CursorHoldI',
+			-- 'CursorHold',
+			-- 'CursorHoldI',
 			'FileChangedShellPost',
 			'TextChanged',
 			'TextChangedI',
@@ -50,6 +57,11 @@ function M.start()
 			'SessionLoadPost',
 		}, M.update_lines),
 	})
+
+
+
+
+
 end
 
 -- stop autocmds

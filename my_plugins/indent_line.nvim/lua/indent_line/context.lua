@@ -57,8 +57,7 @@ local function get_current_context(bufnr)
 	end
 end
 
-local current_context = {}
-
+M.current_context = {}
 function M.update_context(data)
 	local bufnr = data.buf or vim.api.nvim_get_current_buf()
 
@@ -66,23 +65,26 @@ function M.update_context(data)
 	local start, stop, column = get_current_context(bufnr)
 
 	column = column and column - lines.get_scroll_offset()
-	local new_context = { bufnr, start, stop, column }
+	local new_context = { bufnr, start, stop, column, ns_context }
 
 	if not column or column < 0 then
-		animate.animate_removal(bufnr, ns_context)
-		current_context = {}
+		-- P(data)
+		animate.remove(bufnr, ns_context)
+		M.current_context = {}
 		return
 	end
 
-	if table.concat(new_context) ~= table.concat(current_context) then
-		animate.animate_removal(bufnr, ns_context)
-		current_context = new_context
-		animate.animate(mark_fn, new_context)
+	if table.concat(new_context) ~= table.concat(M.current_context) then
+		-- P(data)
+		animate.remove(bufnr, ns_context)
+		M.current_context = new_context
+		animate.show(mark_fn, new_context)
 	end
 end
 
 function M.unset_context(data)
-	animate.animate_removal(data.buf, ns_context)
+	-- print(data)
+	animate.remove(data.buf, ns_context)
 end
 
 return M
