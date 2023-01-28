@@ -146,20 +146,70 @@ local function show_to_cursor(mark_fn, context)
 	end
 end
 
-local function remove_to_cursor(bufnr, namespace)
+local function move_away(namespace, bufnr, direction)
 	local before_cursor, after_cursor = get_marks_split_by_cursor(bufnr, namespace)
 	local delay_top, delay_bot = calc_delay_ratios(#before_cursor, #after_cursor)
+
+	if direction == 0 then
+		after_cursor = reverse_array(after_cursor)
+	else
+		before_cursor = reverse_array(before_cursor)
+	end
 
 	remove_extmarks(before_cursor, delay_top, bufnr, namespace)
-	remove_extmarks(reverse_array(after_cursor), delay_bot, bufnr, namespace)
+	remove_extmarks(after_cursor, delay_bot, bufnr, namespace)
 end
 
-local function remove_from_cursor(bufnr, namespace)
-	local before_cursor, after_cursor = get_marks_split_by_cursor(bufnr, namespace)
-	local delay_top, delay_bot = calc_delay_ratios(#before_cursor, #after_cursor)
+local highlights = {
+	{ 'IndentLineCol1', { fg = '#000000' } },
+	{ 'IndentLineCol2', { fg = '#222222' } },
+	{ 'IndentLineCol3', { fg = '#444444' } },
+	{ 'IndentLineCol4', { fg = '#666666' } },
+	-- { 'IndentLineCol0', { link = 'IndentLine' } },
+}
 
-	remove_extmarks(reverse_array(before_cursor), delay_top, bufnr, namespace)
-	remove_extmarks(after_cursor, delay_bot, bufnr, namespace)
+-- Helper function for transparency formatting
+-- local alpha = function()
+-- 	  return string.format("%x", math.floor(255 * vim.g.neovide_transparency_point or 0.8))
+-- end
+-- -- g:neovide_transparency should be 0 if you want to unify transparency of content and title bar.
+-- vim.g.neovide_transparency = 0.0
+-- vim.g.transparency = 0.8
+-- vim.g.neovide_background_color = "#0f1117" .. alpha()
+
+-- local function lin_interpol(a, b, x) return a + ((b - a) * x) end
+-- local hex = lin_interpol(0x000000, 0xffffff, 0.9)
+-- local val = string.format('%x', hex)
+-- print(val)
+
+local function fade_out(ns, bufnr)
+	local delay = 100
+
+	local marks = vim.api.nvim_buf_get_extmarks(bufnr, ns, 0, -1, { details = true })
+	for i, hl in ipairs(highlights) do
+		Highlight(0, hl[1], hl[2])
+
+		for j, mark in ipairs(marks) do
+			local id, row, col, opts = unpack(mark)
+			-- opts.id = id
+			opts.virt_text_pos = 'overlay'
+			opts.virt_text = { { '▏', hl[1] } }
+			opts.priority = 100 + i
+
+			P(i, j, opts.virt_text)
+
+			-- nvim.defer(i - 1 * delay, vim.api.nvim_buf_set_extmark, bufnr, ns, row, col, opts)
+			vim.api.nvim_buf_del_extmark(bufnr, ns, id)
+
+			local new_id = vim.api.nvim_buf_set_extmark(bufnr, ns, row, col, opts)
+			nvim.defer((i - 1) * delay, vim.api.nvim_buf_del_extmark, bufnr, ns, new_id)
+
+			-- if i == #highlights then
+			-- 	nvim.defer(i * delay, vim.api.nvim_buf_del_extmark, bufnr, ns, new_id)
+			-- end
+		end
+		-- break
+	end
 end
 
 -------------------------------------------------API------------------------------------------------
@@ -168,13 +218,13 @@ function M.show(mark_fn, context)
 	cancel_last_animation(last_animation_up)
 	cancel_last_animation(last_animation_down)
 
-	-- from_cursor(mark_fn, context)
-	show_to_cursor(mark_fn, context)
+	show_from_cursor(mark_fn, context)
+	-- show_to_cursor(mark_fn, context)
 end
 
-function M.remove(bufnr, namespace)
-	-- remove_to_cursor(bufnr, namespace)
-	remove_from_cursor(bufnr, namespace)
+function M.remove(ns, bufnr)
+	move_away(ns, bufnr, 0)
+	-- fade_out(ns, bufnr)
 end
 
 return M

@@ -69,22 +69,21 @@ function M.update_context(data)
 
 	if not column or column < 0 then
 		-- P(data)
-		animate.remove(bufnr, ns_context)
+		animate.remove(ns_context, bufnr)
 		M.current_context = {}
 		return
 	end
 
 	if table.concat(new_context) ~= table.concat(M.current_context) then
 		-- P(data)
-		animate.remove(bufnr, ns_context)
+		animate.remove(ns_context, bufnr)
 		M.current_context = new_context
 		animate.show(mark_fn, new_context)
 	end
 end
 
 function M.unset_context(data)
-	-- print(data)
-	animate.remove(data.buf, ns_context)
+	animate.remove(ns_context, data.buf)
 end
 
 return M
