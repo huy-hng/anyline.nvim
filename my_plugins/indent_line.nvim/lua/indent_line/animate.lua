@@ -115,11 +115,12 @@ local function show_from_cursor(mark_fn, context)
 	local cursor_line = vim.api.nvim_win_get_cursor(0)[1]
 	local bufnr, start, stop, column = unpack(context)
 
-	if cursor_line > start then --
+	if cursor_line > start then
 		if cursor_line > stop then cursor_line = cursor_line - 1 end
 		last_animation_up = animate_direction(mark_fn, bufnr, cursor_line, start, column)
 	end
-	if cursor_line < stop then --
+
+	if cursor_line <= stop then --
 		last_animation_down = animate_direction(mark_fn, bufnr, cursor_line, stop, column)
 	end
 end
