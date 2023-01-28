@@ -1,6 +1,6 @@
 local M = {}
 
-local fps = 45
+local fps = 30
 local length_acceleration = 0.05
 
 ------------------------------------------------Utils-----------------------------------------------
@@ -15,20 +15,25 @@ end
 
 local function get_marks_split_by_cursor(bufnr, namespace)
 	local marks = vim.api.nvim_buf_get_extmarks(bufnr, namespace, 0, -1, {})
-	local cursor_line = vim.api.nvim_win_get_cursor(0)[1]
+	local cursor_line = vim.api.nvim_win_get_cursor(0)[1] - 1
 
 	local before_cursor = {}
 	local after_cursor = {}
+	local on_cursor
 
 	for _, mark in ipairs(marks) do
-		if mark[2] <= cursor_line then
+		if mark[2] < cursor_line then
 			table.insert(before_cursor, mark[1])
-		else
+		elseif mark[2] > cursor_line then
 			table.insert(after_cursor, mark[1])
+		else
+			on_cursor = mark[1]
 		end
 	end
+	-- print(cursor_line, #before_cursor, #after_cursor)
+	-- print(' ')
 
-	return before_cursor, after_cursor
+	return before_cursor, after_cursor, on_cursor
 end
 
 local function calc_delay(range)
@@ -101,9 +106,14 @@ end
 
 local function remove_extmarks(marks, delay, bufnr, ns)
 	local i = 0
-	vim.tbl_map(function(id)
-		nvim.defer(i * delay, vim.api.nvim_buf_del_extmark, bufnr, ns, id)
+	return vim.tbl_map(function(id)
+		local timer = nvim.defer(i * delay, vim.api.nvim_buf_del_extmark, bufnr, ns, id)
+
+		-- print('due in now',timer:get_due_in())
+		-- nvim.defer(100, function() print('due in later',timer:get_due_in()) end)
+
 		i = i + 1
+		return timer
 	end, marks)
 end
 
@@ -134,7 +144,6 @@ local function show_to_cursor(mark_fn, context)
 	local after_cursor = math.max(0, stop - cursor_line)
 
 	if before_cursor == 0 and after_cursor == 0 then return end
-	-- print('before, after',before_cursor, after_cursor)
 
 	local delay_top, delay_bot = calc_delay_ratios(before_cursor, after_cursor)
 
@@ -148,7 +157,7 @@ local function show_to_cursor(mark_fn, context)
 end
 
 local function move_away(namespace, bufnr, direction)
-	local before_cursor, after_cursor = get_marks_split_by_cursor(bufnr, namespace)
+	local before_cursor, after_cursor, on_cursor = get_marks_split_by_cursor(bufnr, namespace)
 	local delay_top, delay_bot = calc_delay_ratios(#before_cursor, #after_cursor)
 
 	if direction == 0 then
@@ -157,8 +166,33 @@ local function move_away(namespace, bufnr, direction)
 		before_cursor = reverse_array(before_cursor)
 	end
 
-	remove_extmarks(before_cursor, delay_top, bufnr, namespace)
-	remove_extmarks(after_cursor, delay_bot, bufnr, namespace)
+	local timers1 = remove_extmarks(before_cursor, delay_top, bufnr, namespace)
+	local timers2 = remove_extmarks(after_cursor, delay_bot, bufnr, namespace)
+
+	local function check_timer(timers)
+		for i, timer in ipairs(timers) do
+			if timer:get_due_in() == 0 then
+				table.remove(timers, i)
+			else
+				return false
+			end
+		end
+		return true
+	end
+
+	local i = 0
+	vim.schedule(function()
+		vim.wait(500, function()
+			-- if #timers1 > 1 then print('due in now', timers1[#timers1 - 1]:get_due_in()) end
+
+			if check_timer(timers1) and check_timer(timers2) then return true end
+
+			print(i)
+			i = i + 1
+		end, 10)
+		remove_extmarks({ on_cursor }, delay_bot, bufnr, namespace)
+	end)
+
 end
 
 local highlights = {
