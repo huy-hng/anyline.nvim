@@ -3,8 +3,8 @@ local M = {}
 local utils = R('indent_line.animation.utils')
 
 local function get_hl_color(name)
-    -- from https://github.com/kevinhwang91/nvim-ufo/blob/57f76ff044157010dc1e8c34b05d60906220d6b6/lua/ufo/highlight.lua#L35
-    -- local ok, hl = pcall(api.nvim_get_hl_by_name, 'Folded', termguicolors)
+	-- from https://github.com/kevinhwang91/nvim-ufo/blob/57f76ff044157010dc1e8c34b05d60906220d6b6/lua/ufo/highlight.lua#L35
+	-- local ok, hl = pcall(api.nvim_get_hl_by_name, 'Folded', termguicolors)
 
 	local hl_id = vim.fn.hlID(name)
 	hl_id = vim.fn.synIDtrans(hl_id)
@@ -31,11 +31,9 @@ local function interpolate_colors(color1, color2, ratio)
 	return r .. g .. b
 end
 
-local function create_colors(steps)
-	local col1 = get_hl_color('IndentLineContext')
-	local col2 = get_hl_color('IndentLine')
-	-- local col2 = get_hl_color('WarningMsg')
-	-- local col1 = get_hl_color('Error')
+local function create_colors(start, stop, steps)
+	local col1 = get_hl_color(start)
+	local col2 = get_hl_color(stop)
 	local hl_names = {}
 
 	local step_size = 1 / steps
@@ -49,46 +47,52 @@ local function create_colors(steps)
 	return hl_names
 end
 
-local function fade_color(mark, ns, bufnr, highlights)
+local function fade_color(mark_id, ns, bufnr, highlights, delete)
 	local delay = 30
 
-	-- local mark = vim.api.nvim_buf_get_extmark_by_id(bufnr, ns, markid, { details = true })
-	local id, row, col, opts = unpack(mark)
+	local mark = vim.api.nvim_buf_get_extmark_by_id(bufnr, ns, mark_id, { details = true })
+
+	local row, col, opts = unpack(mark)
 	for i, hl in ipairs(highlights) do
 		nvim.defer((i - 1) * delay, function()
-			opts.id = id
+			opts.id = mark_id
 			opts.virt_text_pos = 'overlay'
 			opts.virt_text = { { '▏', hl } }
 			vim.api.nvim_buf_set_extmark(bufnr, ns, row, col, opts)
-			if i == #highlights then
-				nvim.defer(i * delay, vim.api.nvim_buf_del_extmark, bufnr, ns, id)
+			if delete and i == #highlights then
+				nvim.defer(i * delay, vim.api.nvim_buf_del_extmark, bufnr, ns, mark_id)
 			end
 		end)
 	end
 end
 
-local function fade_color(mark, ns, bufnr, highlights)
-	local delay = 30
+function M.fade_out(context)
+	local bufnr = context.bufnr
+	local ns = context.ns
 
-	-- local mark = vim.api.nvim_buf_get_extmark_by_id(bufnr, ns, markid, { details = true })
-	local id, row, col, opts = unpack(mark)
-	for i, hl in ipairs(highlights) do
-		nvim.defer((i - 1) * delay, function()
-			opts.id = id
-			opts.virt_text_pos = 'overlay'
-			opts.virt_text = { { '▏', hl } }
-			vim.api.nvim_buf_set_extmark(bufnr, ns, row, col, opts)
-			if i == #highlights then
-				nvim.defer(i * delay, vim.api.nvim_buf_del_extmark, bufnr, ns, id)
-			end
-		end)
-	end
+	local highlights = create_colors('IndentLineContext', 'IndentLine', 10)
+	-- local marks = vim.api.nvim_buf_get_extmarks(bufnr, ns, 0, -1, { details = true })
+
+	local timers = utils.delay_map(context.marks, 0, function(mark) --
+		fade_color(mark[1], ns, bufnr, highlights, true)
+	end)
+
+	return timers
+	-- utils.mark_map(marks, 0, fade_color, ns, bufnr, highlights)
 end
 
-function M.fade_out(ns, bufnr)
-	local highlights = create_colors(10)
-	local marks = vim.api.nvim_buf_get_extmarks(bufnr, ns, 0, -1, { details = true })
-	utils.mark_map(marks, 0, fade_color, ns, bufnr, highlights)
+function M.fade_in(context)
+	local bufnr = context.bufnr
+	local ns = context.ns
+
+    local highlights = create_colors('IndentLine', 'IndentLineContext', 10)
+
+	local timers = utils.delay_map(context.marks, 0, function(mark) --
+		fade_color(mark[1], ns, bufnr, highlights)
+	end)
+
+	return timers
+	-- utils.mark_map(marks, 0, fade_color, ns, bufnr, highlights)
 end
 
 return M

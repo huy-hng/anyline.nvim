@@ -92,9 +92,10 @@ end
 
 function Context:remove()
 	self:cancel_animation()
-	nvim.schedule(function() self:animate(animation.move_marks) end)
+	-- nvim.schedule(function() self:animate(animation.move_marks) end)
+	nvim.schedule(function() self:animate(animation.fade_out) end)
 
-	animation.fade_out(self.ns, self.bufnr)
+	-- animation.fade_out(self.ns, self.bufnr)
 	-- if not self.active then return end
 	-- self.active = false
 	-- local timers = animation.move_marks(self, 0)

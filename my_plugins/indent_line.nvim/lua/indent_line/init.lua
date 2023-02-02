@@ -40,9 +40,7 @@ local context_manager
 function M.start()
 	context_manager = ContextManager()
 	Augroup('IndentLine', {
-		-- Autocmd({ 'CursorMoved', 'CursorMovedI' }, context_manager:update_wrap()),
 		Autocmd({ 'CursorMoved', 'CursorMovedI' }, context_manager:wrap(context_manager.update_buffer)),
-		-- Autocmd({ 'CursorMoved', 'CursorMovedI' }, context.update_context),
 		Autocmd('WinScrolled', M.update),
 		-- Autocmd('WinLeave', context_manager:),
 		Autocmd({
