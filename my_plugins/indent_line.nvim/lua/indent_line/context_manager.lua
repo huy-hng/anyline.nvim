@@ -67,6 +67,14 @@ function ContextManager:new(bufnr, context_opts)
 		hl = 'ModeMsg',
 		prio = 20,
 	}
+
+	Augroup('IndentLine', {
+		Autocmd({
+			'CursorHold',
+			'CursorHoldI',
+		}, function() new.context_opts.prio = 20 end),
+	})
+
 	return new
 end
 
@@ -116,7 +124,7 @@ function ContextManager:changed_context(new_context)
 end
 
 function ContextManager:new_context(bufnr, context_data)
-	---@type Context
+	self.context_opts.prio = self.context_opts.prio + 1
 	local context = context_creator(self.ns, bufnr, context_data, self.context_opts)
 	context:show()
 	self.current_context = context
