@@ -1,89 +1,126 @@
-local M = {}
+local utils = R('indent_line.animation.utils')
+local animation = R('indent_line.animation')
 
-local opts = {
-	indent_char = '▏',
-	ft_ignore = {
-		'NvimTree',
-		'TelescopePrompt',
-		'alpha',
-	},
-	highlight = 'Comment',
-	context_highlight = 'ModeMsg',
-	priority = 19,
-	priority_context = 20,
-}
+---@class Context
+---@field start number
+---@field stop number
+---@field column number
+---@field active boolean wether the context is highlighted or in an animation
+---
+---@field bufnr number
+---@field ns number namespace
+---
+---@field hl string highlight group
+---@field char string line character
+---@field prio number extmark priority
+---
+---@field timers table
+---@field marks table
+---overload fun(fn: function, wait: number, leading?: boolean): UfoDebounce
+local Context = {}
 
-local cache = require('indent_line.cache')
-local lines = require('indent_line.lines')
-local animate = R('indent_line.animate')
+-- function Context:new(bufnr, ns, start, stop, column, hl, char, prio)
+function Context:new(ns, bufnr, data, opts)
+	local new = setmetatable({}, self)
+	new.start = data.start
+	new.stop = data.stop
+	new.column = data.column
+	new.active = false
 
-local ns_context = vim.api.nvim_create_namespace('IndentLineContext')
-local mark_fn =
-	lines.mark_factory(ns_context, opts.indent_char, 'IndentLineContext', opts.priority_context)
+	new.bufnr = bufnr
+	new.ns = ns
 
------------------------------------------------helpers----------------------------------------------
-
-local function get_indentation(bufnr, line)
-	local indents = cache.get_cache(bufnr).lines[line]
-	local column = npcall(table.slice, indents, -1)
-	return column or -1
-end
-
-local function get_current_context(bufnr)
-	local cursor_pos = vim.fn.getcurpos(0)
-	local cursor_line = cursor_pos[2] - 1
-
-	local column = get_indentation(bufnr, cursor_line)
-	local next = get_indentation(bufnr, cursor_line + 1)
-
-	if not column and not next then return end
-
-	-- include context when cursor is on start of context (not inside indentation yet)
-	if next > column then
-		column = next
-		cursor_line = cursor_line + 1
+	if opts then
+		new.hl = opts.hl
+		new.char = opts.char
+		new.prio = opts.prio
 	end
 
-	local ranges = cache.buffer_caches[bufnr].line_ranges[column]
-	if not ranges then return end
+	new.marks = {}
+	new.timers = {}
+	return new
+end
 
-	for _, line_pair in ipairs(ranges) do
-		local start = line_pair[1]
-		local stop = line_pair[2]
+function Context:call(...) end
 
-		if cursor_line >= start and cursor_line <= stop then --
-			return start, stop, column
+function Context:set_extmark(row, col)
+	col = col or self.column
+	if col < 0 then return end
+
+	local mark_id = vim.api.nvim_buf_set_extmark(self.bufnr, self.ns, row, 0, {
+		virt_text_hide = false,
+		virt_text_win_col = col,
+		virt_text = { { self.char, self.hl } },
+		virt_text_pos = 'overlay',
+		hl_mode = 'combine',
+		-- hl_eol = true,
+		priority = self.prio or 1,
+		right_gravity = true,
+		end_right_gravity = false,
+		end_col = col + 1,
+		strict = false,
+	})
+	table.insert(self.marks, { mark_id, row })
+	-- self.marks[row] = mark_id
+end
+
+function Context:show()
+	-- for i, val in ipairs(self.marks) do
+	-- 	nvim.defer(i * 0, vim.api.nvim_buf_del_extmark, self.bufnr, self.ns, val)
+	-- end
+	self.active = true
+	self.timers = animation.show_from_cursor(self)
+end
+
+function Context:animate(fn, callback)
+	local timers = fn(self)
+
+	utils.add_timer_callback(timers, function()
+		if callback then
+			callback()
 		end
+		-- local marks = vim.api.nvim_buf_get_extmarks(self.bufnr, self.ns, 0, -1, { details = true })
+		-- for _, mark in ipairs(marks) do
+		-- 	local opts = mark[4]
+		-- 	if opts.virt_text_win_col == self.column then
+		-- 		vim.api.nvim_buf_del_extmark(self.bufnr, self.ns, mark[1])
+		-- 		P(marks[1])
+		-- 	end
+		-- end
+	end)
+end
+
+function Context:remove()
+	self:cancel_animation()
+	nvim.schedule(function() self:animate(animation.move_marks) end)
+
+	animation.fade_out(self.ns, self.bufnr)
+	-- if not self.active then return end
+	-- self.active = false
+	-- local timers = animation.move_marks(self, 0)
+end
+
+function Context:cancel_animation()
+	if self.timers then --
+		utils.cancel_timers(self.timers)
 	end
 end
 
-M.current_context = {}
-function M.update_context(data)
-	local bufnr = data.buf or vim.api.nvim_get_current_buf()
+function Context:equals(other)
+	local start = self.start == other.start
+	local stop = self.stop == other.stop
+	local column = self.column == other.column
+	local bufnr = self.bufnr == other.bufnr
 
-	if not cache.buffer_caches[bufnr] then cache.update_cache(bufnr) end
-	local start, stop, column = get_current_context(bufnr)
-
-	column = column and column - lines.get_scroll_offset()
-	local new_context = { bufnr, start, stop, column, ns_context }
-
-	if not column or column < 0 then
-		-- P(data)
-		animate.remove(ns_context, bufnr)
-		M.current_context = {}
-		return
-	end
-
-	if table.concat(new_context) ~= table.concat(M.current_context) then
-		-- P(data)
-		animate.remove(ns_context, bufnr)
-		M.current_context = new_context
-		animate.show(mark_fn, new_context)
-	end
+	return start and stop and column and bufnr and true or false
+	-- return false
 end
 
-function M.unset_context(data)
-	animate.remove(ns_context, data.buf)
-end
+Context.__index = Context
+Context.__call = Context.call
+Context.__eq = Context.equals
 
-return M
+setmetatable(Context, {
+	__call = Context.new,
+})
+return Context

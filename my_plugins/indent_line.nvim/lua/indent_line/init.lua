@@ -1,8 +1,11 @@
 local M = {}
 
+---@module "indent_line.context_manager"
+local ContextManager = R('indent_line.context_manager')
+
 local cache = require('indent_line.cache')
 local context = R('indent_line.context')
-local lines = require('indent_line.lines')
+local lines = R('indent_line.lines')
 
 -- TODO: when text changed, only update change area
 -- TODO: implement debounce logic. see /home/huy/.local/share/nvim/lazy/nvim-ufo/lua/ufo/lib/debounce.lua
@@ -33,11 +36,15 @@ function M.setup(user_opts)
 end
 
 --- start indentline autocmds
+local context_manager
 function M.start()
+	context_manager = ContextManager()
 	Augroup('IndentLine', {
-		Autocmd({ 'CursorMoved', 'CursorMovedI' }, context.update_context),
-		Autocmd('WinScrolled', M.refresh),
-		Autocmd('WinLeave', context.unset_context),
+		-- Autocmd({ 'CursorMoved', 'CursorMovedI' }, context_manager:update_wrap()),
+		Autocmd({ 'CursorMoved', 'CursorMovedI' }, context_manager:wrap(context_manager.update_buffer)),
+		-- Autocmd({ 'CursorMoved', 'CursorMovedI' }, context.update_context),
+		Autocmd('WinScrolled', M.update),
+		-- Autocmd('WinLeave', context_manager:),
 		Autocmd({
 			-- 'CursorHold',
 			-- 'CursorHoldI',
@@ -48,7 +55,7 @@ function M.start()
 			'BufWinEnter',
 			'VimEnter',
 			'SessionLoadPost',
-		}, M.update_lines),
+		}, M.update_wrap(true)),
 	})
 end
 
@@ -57,29 +64,32 @@ function M.stop() DeleteAugroup('IndentLine') end
 
 ---------------------------------------------Functions----------------------------------------------
 
-function M.refresh(data)
+function M.update(data, update_cache)
 	local bufnr = data.buf
+
 	lines.clear_lines(bufnr, namespace)
 
-	if not cache.buffer_caches[bufnr] then cache.update_cache(bufnr) end
+	if update_cache or not cache.buffer_caches[bufnr] then --
+		cache.update_cache(bufnr)
+	end
 
 	lines.set_lines(bufnr, mark_fn)
-	context.update_context(data)
+	context_manager:update_buffer(data)
 end
 
-function M.update_lines(data)
-	local bufnr = data.buf
+function M.update_wrap(update_cache)
+	if type(update_cache) == 'table' then
+		local data = update_cache
+		M.update(data, false)
+	end
 
-	lines.clear_lines(bufnr, namespace)
-
-	cache.update_cache(bufnr)
-
-	context.update_context(data)
-	lines.set_lines(bufnr, mark_fn)
+	return function(data) --
+		M.update(data, update_cache)
+	end
 end
 
 -- cache.clear_cache()
--- M.stop()
+-- M.stop
 M.setup()
 
 return M
