@@ -9,4 +9,5 @@ return {
 	cancel_last_animation = utils.cancel_last_animation,
 	move_away = move_line.move_away,
 	move_marks = move_line.move_marks,
+	create_colors = colors.create_colors,
 }

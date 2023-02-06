@@ -39,7 +39,6 @@ function M.set_lines(bufnr, mark_fn)
 	local buf_cache = cache.buffer_caches[bufnr]
 	if not buf_cache then return end
 	local lines = buf_cache.lines
-	
 
 	for line, columns in pairs(lines) do
 		for _, column in ipairs(columns) do

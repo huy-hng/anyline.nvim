@@ -1,12 +1,8 @@
-local M = {}
-
 ---@alias line number
 ---@alias column number
 ---@alias line_cache table<line, column[]>
 ---@alias range_cache table<column, number[]> { column: { start, end } }
 ---@alias bufnr number
----@type table<bufnr, { lines: line_cache, line_ranges: range_cache }>
-M.buffer_caches = {}
 
 local function get_treesitter(bufnr)
 	local ts_query = nrequire('nvim-treesitter.query')
@@ -70,18 +66,18 @@ local function convert_cache_format(cached_lines)
 	return ranges
 end
 
-function M.get_cache(bufnr)
-	bufnr = bufnr or vim.api.nvim_get_current_buf()
-	if not M.buffer_caches[bufnr] then M.update_cache(bufnr) end
-	return M.buffer_caches[bufnr]
+
+---@class Cache
+---@field buffer_caches table<bufnr, { lines: line_cache, line_ranges: range_cache }>
+local Cache = {}
+
+function Cache:new()
+	local new = setmetatable({}, self)
+	new.buffer_caches = {}
+	return new
 end
 
-function M.clear_cache(bufnr)
-	M.buffer_caches = {}
-	if bufnr then M.update_cache(bufnr) end
-end
-
-function M.cache_lines(ts_indent, indent_width, lines)
+function Cache:cache_lines(ts_indent, indent_width, lines)
 	local cached_lines = {}
 	-- loop through lines
 	for linenr, line_text in ipairs(lines) do
@@ -110,17 +106,29 @@ function M.cache_lines(ts_indent, indent_width, lines)
 	return cached_lines
 end
 
-function M.update_cache(bufnr, start, stop)
+function Cache:update_cache(bufnr, start, stop)
 	local _, ts_indent = get_treesitter(bufnr)
 	-- if not has_indents(bufnr) then return end
 
 	local indent_width = get_indent_width(bufnr)
 	local lines = vim.api.nvim_buf_get_lines(bufnr, start or 0, stop or -1, false)
 
-	local cached_lines = M.cache_lines(ts_indent, indent_width, lines)
+	local cached_lines = self:cache_lines(ts_indent, indent_width, lines)
 
 	local converted = convert_cache_format(cached_lines)
-	M.buffer_caches[bufnr] = { lines = cached_lines, line_ranges = converted }
+	self.buffer_caches[bufnr] = { lines = cached_lines, line_ranges = converted }
 end
 
-return M
+function Cache:get_cache(bufnr)
+	bufnr = bufnr or vim.api.nvim_get_current_buf()
+	if not self.buffer_caches[bufnr] then self.update_cache(bufnr) end
+	return self.buffer_caches[bufnr]
+end
+
+Cache.__index = Cache
+
+setmetatable(Cache, {
+	__call = Cache.new,
+})
+
+return Cache

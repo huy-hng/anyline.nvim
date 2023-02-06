@@ -1,11 +1,10 @@
 local M = {}
 
----@module "indent_line.context_manager"
-local ContextManager = R('indent_line.context_manager')
-
 local cache = require('indent_line.cache')
 local context = R('indent_line.context')
-local lines = R('indent_line.lines')
+local manager = require('indent_line.line_manager')
+local ContextManager = R('indent_line.context_manager')
+R('indent_line.animation.move_line')
 
 -- TODO: when text changed, only update change area
 -- TODO: implement debounce logic. see /home/huy/.local/share/nvim/lazy/nvim-ufo/lua/ufo/lib/debounce.lua
@@ -26,53 +25,53 @@ local opts = {
 }
 
 local namespace = vim.api.nvim_create_namespace('IndentLine')
-local mark_fn = lines.mark_factory(namespace, opts.indent_char, 'IndentLine', opts.priority)
 
 function M.setup(user_opts)
 	opts = vim.tbl_extend('force', opts, user_opts or {})
 	Highlight(0, 'IndentLine', { link = opts.highlight })
 	Highlight(0, 'IndentLineContext', { link = opts.context_highlight })
-	M.start()
+	M.set_autocmds()
 end
 
 --- start indentline autocmds
-local context_manager
-function M.start()
-	context_manager = ContextManager()
+function M.set_autocmds()
+	local context_manager = ContextManager()
 	Augroup('IndentLine', {
-		Autocmd({ 'CursorMoved', 'CursorMovedI' }, context_manager:wrap(context_manager.update_buffer)),
-		Autocmd('WinScrolled', M.update),
-		-- Autocmd('WinLeave', context_manager:),
+		-- Autocmd({ 'CursorMoved', 'CursorMovedI' }, context.update_context),
+		Autocmd(
+			{ 'CursorMoved', 'CursorMovedI' },
+			context_manager:wrap(context_manager.update_buffer)
+		),
+		Autocmd('WinScrolled', M.update_lines),
+		Autocmd('WinLeave', function() context_manager:remove_current_context() end),
 		Autocmd({
-			-- 'CursorHold',
-			-- 'CursorHoldI',
 			'FileChangedShellPost',
 			'TextChanged',
 			'TextChangedI',
 			'CompleteChanged',
 			'BufWinEnter',
-			'VimEnter',
+			-- 'VimEnter',
 			'SessionLoadPost',
-		}, M.update_wrap(true)),
+		}, M.force_reload),
+		-- }, M.update_lines),
 	})
 end
 
 -- stop autocmds
-function M.stop() DeleteAugroup('IndentLine') end
+function M.delete_autocmds() DeleteAugroup('IndentLine') end
 
 ---------------------------------------------Functions----------------------------------------------
 
-function M.update(data, update_cache)
+function M.update_lines(data)
 	local bufnr = data.buf
+	manager.clear_buffer(bufnr)
+	manager.set_buffer_lines(bufnr)
+end
 
-	lines.clear_lines(bufnr, namespace)
-
-	if update_cache or not cache.buffer_caches[bufnr] then --
-		cache.update_cache(bufnr)
-	end
-
-	lines.set_lines(bufnr, mark_fn)
-	context_manager:update_buffer(data)
+function M.force_reload(data)
+	local bufnr = data.buf
+	cache.update_cache(bufnr)
+	M.update_lines(data)
 end
 
 function M.update_wrap(update_cache)
@@ -86,8 +85,6 @@ function M.update_wrap(update_cache)
 	end
 end
 
--- cache.clear_cache()
--- M.stop
 M.setup()
 
 return M

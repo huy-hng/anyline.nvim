@@ -111,6 +111,7 @@ end
 
 function M.delay_map(iterable, delay, fn, ...)
 	local timers = {}
+	if not iterable then return end
 
 	for i, mark in ipairs(iterable) do
 		if delay == 0 then

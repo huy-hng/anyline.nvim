@@ -1,6 +1,7 @@
 local M = {}
 
-local utils = R('indent_line.animation.utils')
+local utils = require('indent_line.animation.utils')
+local generate_number_range = require('indent_line.utils').generate_number_range
 
 local function get_hl_color(name)
 	-- from https://github.com/kevinhwang91/nvim-ufo/blob/57f76ff044157010dc1e8c34b05d60906220d6b6/lua/ufo/highlight.lua#L35
@@ -31,7 +32,8 @@ local function interpolate_colors(color1, color2, ratio)
 	return r .. g .. b
 end
 
-local function create_colors(start, stop, steps)
+function M.create_colors(start, stop, steps, ns)
+	-- print(start, stop, steps)
 	local col1 = get_hl_color(start)
 	local col2 = get_hl_color(stop)
 	local hl_names = {}
@@ -41,7 +43,7 @@ local function create_colors(start, stop, steps)
 		local between = interpolate_colors(col1, col2, i)
 		local name = 'IndentLineFadeColor' .. tostring(i)
 		table.insert(hl_names, name)
-		Highlight(0, name, { fg = '#' .. between })
+		Highlight(ns or 0, name, { fg = '#' .. between })
 	end
 
 	return hl_names
@@ -70,7 +72,7 @@ function M.fade_out(context)
 	local bufnr = context.bufnr
 	local ns = context.ns
 
-	local highlights = create_colors('IndentLineContext', 'IndentLine', 10)
+	local highlights = M.create_colors('IndentLineContext', 'IndentLine', 10)
 	-- local marks = vim.api.nvim_buf_get_extmarks(bufnr, ns, 0, -1, { details = true })
 
 	local timers = utils.delay_map(context.marks, 0, function(mark) --
@@ -85,7 +87,7 @@ function M.fade_in(context)
 	local bufnr = context.bufnr
 	local ns = context.ns
 
-    local highlights = create_colors('IndentLine', 'IndentLineContext', 10)
+	local highlights = M.create_colors('IndentLine', 'IndentLineContext', 10)
 
 	local timers = utils.delay_map(context.marks, 0, function(mark) --
 		fade_color(mark[1], ns, bufnr, highlights)

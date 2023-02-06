@@ -3,16 +3,17 @@ local utils = R('indent_line.animation.utils')
 
 local M = {}
 
-function M.show_direction(context, start, stop)
-	start = start or context.start
-	stop = stop or context.stop
+---@param line Line
+function M.show_direction(line, start, stop)
+	start = start or line.startln
+	stop = stop or line.endln
 
 	local direction = stop - start > 0 and 1 or -1
 	local lines = generate_number_range(start, stop, direction)
-
 	local delay = utils.calc_delay(math.abs(stop - start))
-	local timers = utils.delay_map(lines, delay, function(line) --
-		context.set_extmark(context, line)
+
+	local timers = utils.delay_map(lines, delay, function(linenr) --
+		line:update_extmark(linenr, 'ModeMsg')
 	end)
 
 	return timers
@@ -68,7 +69,7 @@ function M.move_marks(context, direction)
 	local delay_top, delay_bot = utils.calc_delay_ratios(#before_cursor, #after_cursor)
 
 	-- if direction == 1 then
-		after_cursor = utils.reverse_array(after_cursor)
+	after_cursor = utils.reverse_array(after_cursor)
 	-- else
 	-- 	before_cursor = utils.reverse_array(before_cursor)
 	-- end
@@ -79,22 +80,22 @@ function M.move_marks(context, direction)
 	return table.add(before, after)
 end
 
----@param context Context
-function M.show_from_cursor(context)
+---@param line Line
+function M.show_from_cursor(line)
 	local cursor_line = vim.api.nvim_win_get_cursor(0)[1]
 
-	local start = context.start
-	local stop = context.stop
+	local startln = line.startln
+	local endln = line.endln
 
 	local animation_up
 	local animation_down
-	if cursor_line > start then
-		if cursor_line > stop then cursor_line = cursor_line - 1 end
-		animation_up = M.show_direction(context, cursor_line, start)
+	if cursor_line > startln then
+		if cursor_line > endln then cursor_line = cursor_line - 1 end
+		animation_up = M.show_direction(line, cursor_line, startln)
 	end
 
-	if cursor_line <= stop then --
-		animation_down = M.show_direction(context, cursor_line, stop)
+	if cursor_line <= endln then --
+		animation_down = M.show_direction(line, cursor_line, endln)
 	end
 
 	return table.add(animation_up, animation_down)
