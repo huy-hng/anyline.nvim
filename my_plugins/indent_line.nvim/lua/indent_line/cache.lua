@@ -111,15 +111,15 @@ function M.cache_lines(ts_indent, indent_width, lines)
 end
 
 function M.update_cache(bufnr, start, stop)
+	if not vim.api.nvim_buf_is_valid(bufnr) then return end
 	local _, ts_indent = get_treesitter(bufnr)
-	-- if not has_indents(bufnr) then return end
 
 	local indent_width = get_indent_width(bufnr)
 	local lines = vim.api.nvim_buf_get_lines(bufnr, start or 0, stop or -1, false)
 
 	local cached_lines = M.cache_lines(ts_indent, indent_width, lines)
-
 	local converted = convert_cache_format(cached_lines)
+
 	M.buffer_caches[bufnr] = { lines = cached_lines, line_ranges = converted }
 end
 

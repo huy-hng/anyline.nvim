@@ -63,10 +63,6 @@ end
 
 function Context:animate(fn, callback)
 	local timers = fn(self.line)
-
-	-- utils.add_timer_callback(timers, function()
-	-- 	if callback then callback() end
-	-- end)
 end
 
 function Context:remove()
@@ -77,11 +73,6 @@ function Context:remove()
 	for linenr = line.startln, line.endln do
 		line:change_mark_color(linenr, 'IndentLine', 20, 10, false)
 	end
-	-- nvim.schedule(function()
-	-- 	for linenr = line.startln, line.endln do
-	-- 		line:change_mark_color(linenr, 'IndentLine', 0, 10, false)
-	-- 	end
-	-- end)
 end
 
 function Context:cancel_animation()

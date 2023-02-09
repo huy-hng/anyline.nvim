@@ -1,18 +1,10 @@
 local M = {}
+local utils = R('indent_line.utils')
+local opts = R('indent_line.default_opts')
 
-local fps = 45
-local length_acceleration = 0.05
-
-function M.calc_delay(range)
-	if fps == 0 then return 0 end
-
-	-- local factor = math.max(range * length_acceleration, 1)
-	local factor = (range * length_acceleration) + 1
-	local delay = math.ceil(1000 / (fps * factor)) -- ms
-	-- print('calc_delay: range, factor, delay = ', range, factor, delay)
-
-	return delay
-end
+local fps = opts.fps
+local mspf = 1000 / fps
+local length_acceleration = opts.length_acceleration
 
 function M.reverse_array(tbl)
 	local rev = {}
@@ -59,9 +51,23 @@ function M.split_marks_by_cursor(marks)
 	return before_cursor, after_cursor
 end
 
-function M.calc_delay_ratios(before, after)
-	local total = before + after
+function M.calc_delay(range)
+	if fps == 0 then return 0 end
 
+	-- local factor = math.max(range * length_acceleration, 1)
+	local factor = (range * length_acceleration) + 1
+	local delay = math.ceil(1000 / (fps * factor)) -- ms
+	-- print('calc_delay: range, factor, delay = ', range, factor, delay)
+
+	return delay
+end
+
+
+function M.calc_delay_ratios(before, after)
+	before = math.abs(before)
+	after = math.abs(after)
+
+	local total = before + after
 	local delay = M.calc_delay(total)
 
 	local delay_top = delay
@@ -70,69 +76,27 @@ function M.calc_delay_ratios(before, after)
 	local top_ratio = before / total
 	local bot_ratio = after / total
 	if before > after then
-		delay_bot = (top_ratio / bot_ratio) * delay
+		delay_bot = math.max((top_ratio / bot_ratio) * delay, 0)
 	else
-		delay_top = (bot_ratio / top_ratio) * delay
+		delay_top = math.max((bot_ratio / top_ratio) * delay, 0)
 	end
 	return delay_top, delay_bot
 end
 
-function M.remove_extmarks(marks, delay, bufnr, ns)
-	return M.delay_map(marks, delay, function(id) --
-		nvim.schedule(vim.api.nvim_buf_del_extmark, bufnr, ns, id)
+---@param line Line
+function M.show_direction(line, start, stop)
+	start = start or line.startln
+	stop = stop or line.endln
+
+	local direction = stop - start > 0 and 1 or -1
+	local lines = utils.generate_number_range(start, stop, direction)
+	local delay = utils.calc_delay(math.abs(stop - start))
+
+	local timers = utils.delay_map(lines, delay, function(linenr) --
+		line:update_extmark(linenr, 'ModeMsg')
 	end)
-end
-
-function M.cancel_timers(timers)
-	if not timers then return end
-	for _, timer in ipairs(timers) do
-		timer:unref()
-		timer:stop()
-		if not timer:is_closing() then timer:close() end
-	end
-end
-
-function M.mark_map(marks, delay, fn, ...)
-	local animation = {}
-	if type(marks[1]) == 'string' then
-		-- vim.api.nvim_buf_get_extmark_by_id()
-	end
-
-	for i, mark in ipairs(marks) do
-		if delay == 0 then
-			fn(mark, ...)
-		else
-			local timer = nvim.defer((i - 1) * delay, fn, mark, ...)
-			table.insert(animation, timer)
-		end
-	end
-	return animation
-end
-
-function M.delay_map(iterable, delay, fn, ...)
-	local timers = {}
-	if not iterable then return end
-
-	for i, mark in ipairs(iterable) do
-		if delay == 0 then
-			fn(mark, ...)
-		else
-			local timer = nvim.defer((i - 1) * delay, fn, mark, ...)
-			table.insert(timers, timer)
-		end
-	end
 
 	return timers
-end
-
-function M.add_timer_callback(timers, callback)
-	local max_due = 0
-	for _, timer in ipairs(timers) do
-		local due = timer:get_due_in()
-		if due > max_due then max_due = due end
-	end
-	-- vim.defer_fn(callback, max_due * 1.1)
-	return vim.defer_fn(callback, max_due)
 end
 
 return M

@@ -3,22 +3,6 @@ local utils = R('indent_line.animation.utils')
 
 local M = {}
 
----@param line Line
-function M.show_direction(line, start, stop)
-	start = start or line.startln
-	stop = stop or line.endln
-
-	local direction = stop - start > 0 and 1 or -1
-	local lines = generate_number_range(start, stop, direction)
-	local delay = utils.calc_delay(math.abs(stop - start))
-
-	local timers = utils.delay_map(lines, delay, function(linenr) --
-		line:update_extmark(linenr, 'ModeMsg')
-	end)
-
-	return timers
-end
-
 function M.show_to_cursor(mark_fn, context)
 	local bufnr, start, stop, column, namespace = unpack(context)
 
@@ -78,27 +62,6 @@ function M.move_marks(context, direction)
 	local after = utils.remove_extmarks(after_cursor, delay_bot, bufnr, namespace)
 
 	return table.add(before, after)
-end
-
----@param line Line
-function M.show_from_cursor(line)
-	local cursor_line = vim.api.nvim_win_get_cursor(0)[1]
-
-	local startln = line.startln
-	local endln = line.endln
-
-	local animation_up
-	local animation_down
-	if cursor_line > startln then
-		if cursor_line > endln then cursor_line = cursor_line - 1 end
-		animation_up = M.show_direction(line, cursor_line, startln)
-	end
-
-	if cursor_line <= endln then --
-		animation_down = M.show_direction(line, cursor_line, endln)
-	end
-
-	return table.add(animation_up, animation_down)
 end
 
 return M

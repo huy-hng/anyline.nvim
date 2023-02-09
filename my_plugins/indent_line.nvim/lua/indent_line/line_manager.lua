@@ -1,6 +1,7 @@
 local M = {}
 local cache = require('indent_line.cache')
 local Line = require('indent_line.line')
+local utils = require('indent_line.utils')
 
 ---alias column number
 ---alias line_cache table<line, column[]>
@@ -21,10 +22,9 @@ function M.get_line(bufnr, startln, endln, column)
 		column = column,
 		bufnr = bufnr,
 	}
+	P(data)
 	for _, line in ipairs(buffer) do
-		if line:equals(data) then
-			return line
-		end
+		if line:equals(data) then return line end
 	end
 end
 
@@ -61,7 +61,7 @@ function M.set_buffer_lines(bufnr)
 	if not columns then return end
 
 	for column, line_pairs in pairs(columns) do
-		if M.get_scroll_offset() > column then
+		if utils.get_scroll_offset() > column then
 			goto continue
 		end
 
@@ -71,17 +71,16 @@ function M.set_buffer_lines(bufnr)
 				bufnr = bufnr,
 				startln = line_pair[1],
 				endln = line_pair[2],
-				lh = 'IndentLine',
-				column = column - M.get_scroll_offset(),
+				hl = 'IndentLine',
+				column = column - utils.get_scroll_offset(),
 				ns = vim.api.nvim_create_namespace('IndentLine'),
 			}
-			line:add_all_extmarks()
+			line:add_extmarks()
 			if not M.buffer_lines[bufnr] then M.buffer_lines[bufnr] = {} end
 			table.insert(M.buffer_lines[bufnr], line)
 		end
 		::continue::
 	end
-	-- P(#M.buffer_lines[bufnr])
 end
 
 function M.clear_buffer(bufnr, ns, startln, endln)
@@ -89,19 +88,9 @@ function M.clear_buffer(bufnr, ns, startln, endln)
 	ns = ns or vim.api.nvim_create_namespace('IndentLine')
 	startln = startln or 0
 	endln = endln or -1
-	vim.api.nvim_buf_clear_namespace(bufnr, ns, startln, endln)
+	pcall(vim.api.nvim_buf_clear_namespace, bufnr, ns, startln, endln)
 
 	M.buffer_lines[bufnr] = {}
-end
-
-function M.get_scroll_offset()
-	local win = vim.fn.winsaveview()
-	local leftcol = win.leftcol
-
-	local topline = win.topline
-	local col = win.col
-	local lnum = win.lnum
-	return leftcol
 end
 
 return M

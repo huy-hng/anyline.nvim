@@ -1,14 +1,17 @@
 local M = {}
-
 local cache = require('indent_line.cache')
-local context = R('indent_line.context')
-local manager = require('indent_line.line_manager')
-local ContextManager = R('indent_line.context_manager')
-R('indent_line.animation.move_line')
+local line_manager = require('indent_line.line_manager')
+local ctx_man = require('indent_line.context_manager')
+local Debounce = require('indent_line.debounce')
+
+-- R('indent_line.line')
+-- R('indent_line.anime')
+-- R('indent_line.utils')
+-- R('indent_line.context_manager')
+-- R('indent_line.line_manager')
+-- R('indent_line.animation.colors')
 
 -- TODO: when text changed, only update change area
--- TODO: implement debounce logic. see /home/huy/.local/share/nvim/lazy/nvim-ufo/lua/ufo/lib/debounce.lua
--- for reference
 
 ----------------------------------------------Config------------------------------------------------
 local opts = {
@@ -24,67 +27,71 @@ local opts = {
 	priority_context = 20,
 }
 
-local namespace = vim.api.nvim_create_namespace('IndentLine')
-
 function M.setup(user_opts)
 	opts = vim.tbl_extend('force', opts, user_opts or {})
+	cache.buffer_caches = {}
+	line_manager.buffer_lines = {}
+
 	Highlight(0, 'IndentLine', { link = opts.highlight })
 	Highlight(0, 'IndentLineContext', { link = opts.context_highlight })
-	M.set_autocmds()
+	vim.api.nvim_create_namespace('IndentLine')
+	-- M.create_autocmds()
 end
 
+-- stop autocmds
+function M.delete_autocmds() DeleteAugroup('IndentLine') end
+
 --- start indentline autocmds
-function M.set_autocmds()
-	local context_manager = ContextManager()
+function M.create_autocmds()
+	local debounce_time = 40
+	local update_context = Debounce(ctx_man.update_buffer, debounce_time)
+	local update_lines = Debounce(M.update_lines, debounce_time)
+	local force_reload = Debounce(M.force_reload, debounce_time)
+
 	Augroup('IndentLine', {
-		-- Autocmd({ 'CursorMoved', 'CursorMovedI' }, context.update_context),
-		Autocmd(
-			{ 'CursorMoved', 'CursorMovedI' },
-			context_manager:wrap(context_manager.update_buffer)
-		),
-		Autocmd('WinScrolled', M.update_lines),
-		Autocmd('WinLeave', function() context_manager:remove_current_context() end),
+		Autocmd('WinLeave', ctx_man.remove_current_context),
+		Autocmd({ 'CursorMoved', 'CursorMovedI' }, update_context),
+		Autocmd('WinScrolled', update_lines),
+		-- Autocmd({ 'CursorHold', 'CursorHoldI' }, update_lines),
 		Autocmd({
 			'FileChangedShellPost',
 			'TextChanged',
 			'TextChangedI',
 			'CompleteChanged',
 			'BufWinEnter',
-			-- 'VimEnter',
+			'WinEnter',
+			'BufWritePost',
 			'SessionLoadPost',
-		}, M.force_reload),
-		-- }, M.update_lines),
+		}, force_reload),
 	})
 end
-
--- stop autocmds
-function M.delete_autocmds() DeleteAugroup('IndentLine') end
 
 ---------------------------------------------Functions----------------------------------------------
 
 function M.update_lines(data)
 	local bufnr = data.buf
-	manager.clear_buffer(bufnr)
-	manager.set_buffer_lines(bufnr)
+	line_manager.clear_buffer(bufnr)
+
+	line_manager.set_buffer_lines(bufnr)
 end
 
 function M.force_reload(data)
 	local bufnr = data.buf
-	cache.update_cache(bufnr)
+	cache.update_cache(data.buf)
 	M.update_lines(data)
+	nvim.schedule(function()
+		ctx_man.update_buffer(data)
+		local line = ctx_man.get_current_context_line(bufnr)
+		if line then line:add_extmarks(nil, 'IndentLineContext') end
+	end)
 end
 
-function M.update_wrap(update_cache)
-	if type(update_cache) == 'table' then
-		local data = update_cache
-		M.update(data, false)
-	end
+-- :vertical new | set bt=nofile | read ++edit # | 0 delete _ | diffthis | wincmd p | diffthis
+-- if !exists(":DiffOrig")
+--     command DiffOrig vert new | set bt=nofile | r # | 0d_ | diffthis | wincmd p | diffthis
+-- endif
 
-	return function(data) --
-		M.update(data, update_cache)
-	end
-end
-
-M.setup()
+-- M.setup()
+-- M.delete_autocmds()
 
 return M

@@ -1,5 +1,3 @@
-local animation = require('indent_line.animation')
-local ani_utils = require('indent_line.animation.utils')
 local utils = require('indent_line.utils')
 
 local function calc_middle(lower, upper) return math.ceil((upper - lower) / 2) + lower end
@@ -46,7 +44,7 @@ end
 ---
 ---@field marks table
 ---@field rows table
----@field timers table
+---@field timers table?
 ---@field mark_details table
 local Line = {}
 
@@ -62,7 +60,13 @@ function Line:new(data)
 
 	new.startln = data.startln
 	new.endln = data.endln
-	new.column = data.column
+	new.column = data.column - utils.get_scroll_offset()
+
+	-- Augroup('IndentLine', {
+	-- 	Autocmd({ 'CursorHold', 'CursorHoldI' }, function() --
+	-- 		new.data.priority = data.priority
+	-- 	end),
+	-- }, false)
 
 	return new
 end
@@ -71,14 +75,10 @@ function Line:get_extmark(id)
 	return vim.api.nvim_buf_get_extmark_by_id(self.bufnr, self.ns, id, { details = true })
 end
 
-function Line:set_extmark(row, opts)
-	return vim.api.nvim_buf_set_extmark(self.bufnr, self.ns, row, 0, opts)
-end
-
 ---@param row number
 ---@param char string?
 ---@param hl string?
-function Line:add_extmark(row, char, hl)
+function Line:add_extmark(row, char, hl, extra_opts)
 	self.current_hl = hl or self.current_hl
 
 	local data = self.data
@@ -92,7 +92,10 @@ function Line:add_extmark(row, char, hl)
 		hl_mode           = 'combine',
 		strict            = false,
 	}
+	vim.tbl_extend('force', opts, extra_opts or {})
+
 	local mark_id = self:set_extmark(row, opts)
+	if not mark_id then return end
 
 	self.mark_details[mark_id] = opts
 	self.rows[row] = mark_id
@@ -105,7 +108,7 @@ end
 function Line:update_extmark(row, hl)
 	local mark_id = self.rows[row]
 	local opts = self.mark_details[mark_id]
-	if not opts then return end
+	if not opts or not mark_id then return end
 
 	opts.virt_text = { { self.data.char, hl } }
 	opts.priority = opts.priority + 1
@@ -116,37 +119,38 @@ function Line:update_extmark(row, hl)
 end
 
 ---@param row number
----@param color string | string[]
-function Line:change_mark_color(row, color, delay, steps, delete)
+---@param colors string[] list of highlight names
+function Line:change_mark_color(row, colors, delay)
 	-- local start_color = self.current_hl or self.data.hl
-	local start_color = 'IndentLineContext'
-	local end_color = color
+	local mark_id = self.rows[row]
 
-	if type(color) == 'table' then
-		start_color = color[1]
-		end_color = color[2]
+	-- local timers = utils.delay_map(highlights, delay, function(hl) --
+	-- 	self:update_extmark(row, hl)
+	-- 	-- vim.schedule(function() self:update_extmark(row, hl) end)
+	-- end)
+
+	P(colors)
+	for i, hl in ipairs(colors) do
+		nvim.defer((i - 1) * delay, function() --
+			self:update_extmark(row, hl)
+		end)
 	end
 
-	-- local highlights = animation.create_colors(start_color, end_color, steps or 10, self.ns)
-	local highlights = animation.create_colors(start_color, end_color, steps or 10, 0)
-
-	local timers = ani_utils.delay_map(highlights, delay, function(hl) --
-		vim.schedule(function() self:update_extmark(row, hl) end)
-	end)
-
-	return timers
+	-- table.add(self.timers, timers)
+	-- return timers
+	return {}
 end
 
-function Line:add_all_extmarks(char, hl)
+function Line:add_extmarks(char, hl)
 	self.current_hl = hl or self.current_hl
 
-	self:remove_line()
+	self:delete_extmarks()
 	for i = self.startln, self.endln do
 		self:add_extmark(i, char, hl)
 	end
 end
 
-function Line:remove_line()
+function Line:delete_extmarks()
 	self.rows = {}
 	self.marks = {}
 	self.mark_details = {}
@@ -160,14 +164,30 @@ function Line:hide(startln, endln) end
 
 ----------------------------------------------Animation---------------------------------------------
 
-function Line:animate(fn, callback)
-	local timers = fn(self)
+function Line:animate(fn, ...)
+	self:cancel_animation()
+	self.timers = fn(self, ...)
+	-- self.timers = nvim.schedule_return(fn, self, ...)
+	-- utils.add_timer_callback(self.timers, function()
+	-- 	self.timers = nil
+	-- 	-- if callback then callback() end
+	-- end)
+	return self.timers
 end
 
-function Line:cancel_animation()
-	if self.timers then --
-		utils.cancel_timers(self.timers)
-	end
+function Line:cancel_animation(keep_timers)
+	if not self.timers then return end
+	utils.cancel_timers(self.timers)
+
+	if keep_timers then return end
+	self.timers = nil
+end
+
+-----------------------------------------------Helpers----------------------------------------------
+
+function Line:set_extmark(row, opts)
+	if not vim.api.nvim_buf_is_valid(self.bufnr) then return end
+	return vim.api.nvim_buf_set_extmark(self.bufnr, self.ns, row, 0, opts)
 end
 
 ---@param other Line
