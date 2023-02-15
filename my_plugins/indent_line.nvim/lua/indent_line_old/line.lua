@@ -1,4 +1,5 @@
 local utils = require('indent_line.utils')
+local markager = require('indent_line_v2.markager')
 
 local function calc_middle(lower, upper) return math.ceil((upper - lower) / 2) + lower end
 
@@ -94,7 +95,11 @@ function Line:add_extmark(row, char, hl, extra_opts)
 	}
 	vim.tbl_extend('force', opts, extra_opts or {})
 
-	local mark_id = self:set_extmark(row, opts)
+	local opts_v2 =
+		markager.build_mark_opts(self.bufnr, row, self.column, data.char, data.hl, extra_opts)
+	local mark_id = markager.set_extmark(opts_v2)
+
+	-- local mark_id = self:set_extmark(row, opts)
 	if not mark_id then return end
 
 	self.mark_details[mark_id] = opts
@@ -119,17 +124,15 @@ function Line:update_extmark(row, hl)
 end
 
 ---@param row number
----@param colors string[] list of highlight names
+---@param colors string[] | string list of highlight names or hl name for no animation
 function Line:change_mark_color(row, colors, delay)
 	-- local start_color = self.current_hl or self.data.hl
 	local mark_id = self.rows[row]
 
-	-- local timers = utils.delay_map(highlights, delay, function(hl) --
-	-- 	self:update_extmark(row, hl)
-	-- 	-- vim.schedule(function() self:update_extmark(row, hl) end)
-	-- end)
+	if type(colors) == 'string' then --
+		return self:update_extmark(row, colors)
+	end
 
-	P(colors)
 	for i, hl in ipairs(colors) do
 		nvim.defer((i - 1) * delay, function() --
 			self:update_extmark(row, hl)

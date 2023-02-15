@@ -74,6 +74,7 @@ end
 
 function M.color_step_amount(duration, c1, c2)
 	-- local color_diff = M.color_difference(c1, c2)
+	duration = math.max(duration, 1)
 	if fps == 0 then return 1 end
 	local steps = math.ceil(duration / (mspf / 2))
 	-- local steps = math.ceil(duration / (1000 / 120))
@@ -110,6 +111,7 @@ function M.get_colors(start_color, end_color, steps, ns)
 		end
 	end
 
+	vim.notify('new colors')
 	-- not found, create new
 	local new_colors = M.create_colors(start_color, end_color, steps, ns)
 
@@ -121,51 +123,6 @@ function M.get_colors(start_color, end_color, steps, ns)
 	})
 
 	return new_colors
-end
-
-local function fade_color(mark_id, ns, bufnr, highlights, delete)
-	local delay = 30
-
-	local mark = vim.api.nvim_buf_get_extmark_by_id(bufnr, ns, mark_id, { details = true })
-
-	local row, col, opts = unpack(mark)
-	for i, hl in ipairs(highlights) do
-		nvim.defer((i - 1) * delay, function()
-			opts.id = mark_id
-			opts.virt_text_pos = 'overlay'
-			opts.virt_text = { { '▏', hl } }
-			vim.api.nvim_buf_set_extmark(bufnr, ns, row, col, opts)
-			if delete and i == #highlights then
-				nvim.defer(i * delay, vim.api.nvim_buf_del_extmark, bufnr, ns, mark_id)
-			end
-		end)
-	end
-end
-
-function M.fade_out(context)
-	local bufnr = context.bufnr
-	local ns = context.ns
-
-	local highlights = M.create_colors('IndentLineContext', 'IndentLine', 10)
-
-	local timers = utils.delay_map(context.marks, 0, function(mark) --
-		fade_color(mark[1], ns, bufnr, highlights, true)
-	end)
-
-	return timers
-end
-
-function M.fade_in(context)
-	local bufnr = context.bufnr
-	local ns = context.ns
-
-	local highlights = M.create_colors('IndentLine', 'IndentLineContext', 10)
-
-	local timers = utils.delay_map(context.marks, 0, function(mark) --
-		fade_color(mark[1], ns, bufnr, highlights)
-	end)
-
-	return timers
 end
 
 return M

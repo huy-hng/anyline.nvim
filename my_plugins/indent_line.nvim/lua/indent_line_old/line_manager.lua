@@ -22,9 +22,10 @@ function M.get_line(bufnr, startln, endln, column)
 		column = column,
 		bufnr = bufnr,
 	}
-	P(data)
 	for _, line in ipairs(buffer) do
-		if line:equals(data) then return line end
+		if line:equals(data) then
+			return line
+		end
 	end
 end
 
@@ -61,9 +62,7 @@ function M.set_buffer_lines(bufnr)
 	if not columns then return end
 
 	for column, line_pairs in pairs(columns) do
-		if utils.get_scroll_offset() > column then
-			goto continue
-		end
+		if utils.get_scroll_offset() > column then goto continue end
 
 		for _, line_pair in ipairs(line_pairs) do
 			---@type Line

@@ -62,7 +62,6 @@ function M.calc_delay(range)
 	return delay
 end
 
-
 function M.calc_delay_ratios(before, after)
 	before = math.abs(before)
 	after = math.abs(after)
@@ -75,11 +74,14 @@ function M.calc_delay_ratios(before, after)
 
 	local top_ratio = before / total
 	local bot_ratio = after / total
+
 	if before > after then
-		delay_bot = math.max((top_ratio / bot_ratio) * delay, 0)
+		delay_bot = bot_ratio == 0 and 0 or math.max((top_ratio / bot_ratio) * delay, 0)
 	else
 		delay_top = math.max((bot_ratio / top_ratio) * delay, 0)
 	end
+
+	-- print(delay_top, delay_bot)
 	return delay_top, delay_bot
 end
 
