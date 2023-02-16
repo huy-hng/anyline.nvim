@@ -20,44 +20,36 @@ function M.get_buffer_marks(bufnr)
 end
 
 ---@return mark_opts
-function M.build_mark_opts(bufnr, row, col, char, hl, extra_opts)
-	--stylua: ignore
+function M.build_mark_opts(col, hl, char, extra_opts)
 	local opts = {
-		virt_text         = { { char or def.indent_char, hl or def.highlight } },
+		virt_text = { { char or def.indent_char, hl or def.highlight } },
 		virt_text_win_col = col,
-		end_col           = col + 1,
-		priority          = M.o.priority or def.priority,
-		virt_text_pos     = 'overlay',
-		hl_mode           = 'combine',
-		strict            = false,
+		end_col = col + 1,
+		priority = M.o.priority or def.priority,
+		virt_text_pos = 'overlay',
+		hl_mode = 'combine',
+		strict = false,
 	}
-	vim.tbl_extend('force', opts, extra_opts or {})
-	return { bufnr = bufnr, row = row, col = col, opts = opts }
+	return vim.tbl_extend('force', opts, extra_opts or {})
 end
 
----@param mark mark_opts
-function M.set_extmark(mark, id)
-	if not vim.api.nvim_buf_is_valid(mark.bufnr) then return end
+function M.set_extmark(bufnr, row, col, hl, char, extra_opts)
+	if not vim.api.nvim_buf_is_valid(bufnr) then return end
 
-	if id then mark.opts.id = id end
-	-- P(mark.opts.virt_text_win_col)
-	-- local mark_id
-	vim.schedule(function()
-		local mark_id = vim.api.nvim_buf_set_extmark(mark.bufnr, M.o.ns, mark.row, 0, mark.opts)
+	local opts = M.build_mark_opts(col, hl, char, extra_opts)
+	-- vim.schedule(function() vim.api.nvim_buf_set_extmark(bufnr, M.o.ns, row, 0, opts) end)
+	return vim.api.nvim_buf_set_extmark(bufnr, M.o.ns, row, 0, opts)
+end
 
-		local marks = M.get_buffer_marks(mark.bufnr)
+function M.update_extmark(bufnr, mark_id, hl, char, extra_opts)
+	local mark = vim.api.nvim_buf_get_extmark_by_id(bufnr, M.o.ns, mark_id, { details = true })
+	if not mark then return end
 
-		-- TODO: get rid of opts.opts? its the entire mark opts that can be queried via nvim api
-		marks[mark_id] = mark
+	local row = mark[1]
+	if not mark[3] then return end
 
-		-- update reverse lookup as well
-		-- TODO: refactor this crap
-		local row = marks.rows[mark.row] or { col = {}, mark_id = nil }
-		row.mark_id = mark_id
-		table.insert(row.col, mark.col)
-	end)
-
-	-- return mark_id
+	local col = mark[3].virt_text_win_col
+	M.set_extmark(bufnr, row, col, hl, char, extra_opts)
 end
 
 function M.remove_all_marks(bufnr)
@@ -81,9 +73,36 @@ function M.get_mark_range(bufnr, startln, endln, col)
 	return vim.tbl_map(function(value) return value.mark_id end, marks)
 end
 
+---@alias mark_with_id { id: number, row: number, col: number, opts: table }
+---@alias mark { row: number, col: number, opts: table }
+
+---@return mark | mark_with_id
+function M.parse_mark(mark)
+	if #mark == 3 then
+		local row, col, opts = unpack(mark)
+		col = opts.virt_text_win_col
+		return { row = row, col = col, opts = opts }
+	end
+
+	local id, row, col, opts = unpack(mark)
+	col = opts.virt_text_win_col
+	return { id = id, row = row, col = col, opts = opts }
+end
+
+---@return { col: number, char: string, hl: string, prio: number }
+function M.parse_opts(opts)
+	local col = opts.virt_text_win_col
+	local char = opts.virt_text[1][1]
+	local hl = opts.virt_text[1][2]
+	local prio = opts.virt_text[1][2]
+	return { col = col, char = char, hl = hl, prio = prio }
+end
+
 function M.context_range(bufnr, startln, endln, column)
 	local marks = vim.api.nvim_buf_get_extmarks(
 		bufnr,
+
+
 		M.o.ns,
 		{ startln - 1, 0 },
 		{ endln + 1, 0 },
@@ -108,17 +127,4 @@ function M.context_range(bufnr, startln, endln, column)
 
 	return new
 end
-
--- TODO: not needed anymore
-local function add_extmark(bufnr, row, col, char, hl, extra_opts)
-	local opts = M.build_mark_opts(bufnr, row, col, char, hl, extra_opts)
-	local mark_id = M.set_extmark(opts)
-end
-
-local function test()
-	local bufnr = vim.api.nvim_get_current_buf()
-	add_extmark(bufnr, 12, 23, 'a', 'a')
-	P(M.buffer_marks[bufnr])
-end
-
 return M
