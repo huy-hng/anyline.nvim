@@ -53,7 +53,7 @@ local function same_context(new_context)
 	if column and startln and endln then return true end
 end
 
-local function set_context(bufnr, context, color, char)
+local function set_context(bufnr, context, animation, hl, char)
 	if not context then return end
 
 	context.column = context.column - utils.get_scroll_offset()
@@ -61,67 +61,42 @@ local function set_context(bufnr, context, color, char)
 
 	local marks = markager.context_range(bufnr, context.startln, context.endln, context.column)
 
+	if animation then
+		animation(bufnr, marks)
+		return
+	end
 
-	local start_color = color[1]
-	local end_color = color[2]
-
-	local hl_names = colors.create_colors(start_color, end_color, 10, 0)
-	local color_delay = 30
-	local move_delay = 20
-
-	utils.delay_map(marks, move_delay, function(mark)
-		utils.delay_map(
-			hl_names,
-			color_delay,
-			function(hl)
-				markager.set_extmark(
-					bufnr,
-					mark.row,
-					mark.column,
-					hl,
-					char,
-					{ priority = mark.opts.priority + 1, id = mark.id }
-				)
-			end
+	for _, mark in ipairs(marks) do
+		markager.set_extmark(
+			bufnr,
+			mark.row,
+			mark.column,
+			hl or 'IndentLineContext',
+			char,
+			{ priority = mark.opts.priority + 1, id = mark.id }
 		)
-	end)
-	-- for _, mark in ipairs(marks) do
-	-- 	-- markager.update_extmark(bufnr, mark.id)
-	-- 	local mark_id = mark.id
-
-	-- 	for i, hl in ipairs(hl_names) do
-	-- 		nvim.defer((i - 1) * delay, function()
-	-- 			-- markager.update_extmark(bufnr, mark.id, hl)
-	-- 		end)
-	-- 	end
-	-- 	-- animate.change_mark_color(bufnr, mark.id, hl, 10)
-	-- end
-end
-
-function M.remove_context(bufnr)
-	if M.prev_context then
-		set_context(bufnr, M.prev_context, { 'IndentLineContext', 'IndentLine' })
 	end
 end
 
----@param bufnr number
----@param animation function | nil
-function M.update(bufnr, animation)
+function M.hide_context(bufnr, animation)
 	local context = get_context_info(bufnr)
 
-	if not same_context(context) then
-		M.remove_context(bufnr)
-		set_context(bufnr, M.prev_context, { 'IndentLineContext', 'IndentLine' })
+	if M.prev_context and not same_context(context) then --
+		set_context(bufnr, M.prev_context, animation, 'IndentLine')
+		M.prev_context = nil
 	end
+
+end
+
+function M.show_context(bufnr, animation)
+	local context = get_context_info(bufnr)
 
 	if context then
 		if same_context(context) then return end
-		nvim.schedule(set_context, bufnr, context, { 'IndentLine', 'IndentLineContext' })
+		nvim.schedule(set_context, bufnr, context, animation)
 	end
 
-	local move_into_context = not M.prev_context and context
 	M.prev_context = context
 end
-
 
 return M
