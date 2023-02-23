@@ -52,11 +52,34 @@ end
 function M.calc_delay(range)
 	if fps == 0 then return 0 end
 
-	local factor = (range * length_acceleration) + 1
-	local delay = math.ceil(1000 / (fps * factor)) -- ms
+	local factor = (range * opts.length_acceleration) + 1
+	local delay = math.ceil(1000 / (opts.lines_per_second * factor))
 	-- print('calc_delay: range, factor, delay = ', range, factor, delay)
 
 	return delay
+end
+
+function M.calc_delay_ratios(before, after)
+	before = math.abs(before)
+	after = math.abs(after)
+
+	local total = before + after
+	local delay = M.calc_delay(total)
+
+	local delay_top = delay
+	local delay_bot = delay
+
+	local top_ratio = before / total
+	local bot_ratio = after / total
+
+	if before > after then
+		delay_bot = bot_ratio == 0 and 0 or math.max((top_ratio / bot_ratio) * delay, 0)
+	else
+		delay_top = top_ratio == 0 and 0 or math.max((bot_ratio / top_ratio) * delay, 0)
+	end
+
+	-- print(delay_top, delay_bot)
+	return delay_top, delay_bot
 end
 
 function M.get_marks_split_by_cursor(bufnr, namespace)
@@ -102,33 +125,19 @@ function M.remove_extmarks(marks, delay, bufnr, ns)
 	end)
 end
 
-function M.mark_map(marks, delay, fn, ...)
-	local animation = {}
-	if type(marks[1]) == 'string' then
-		-- vim.api.nvim_buf_get_extmark_by_id()
-	end
-
-	for i, mark in ipairs(marks) do
-		if delay == 0 then
-			fn(mark, ...)
-		else
-			local timer = nvim.defer((i - 1) * delay, fn, mark, ...)
-			table.insert(animation, timer)
-		end
-	end
-	return animation
-end
-
-function M.delay_map(iterable, delay, fn, ...)
+function M.delay_map(iterable, delay, fn, callback)
 	local timers = {}
 	if not iterable then return end
 
 	for i, mark in ipairs(iterable) do
 		if delay == 0 then
-			fn(mark, ...)
+			fn(mark)
 		else
-			local timer = nvim.defer((i - 1) * delay, fn, mark, ...)
+			local timer = nvim.defer((i - 1) * delay, fn, mark)
 			table.insert(timers, timer)
+		end
+		if type(callback) == 'function' and i == #iterable then
+			local timer = nvim.defer((i - 1) * delay, callback)
 		end
 	end
 

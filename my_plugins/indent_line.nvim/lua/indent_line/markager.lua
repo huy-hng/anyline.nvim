@@ -101,11 +101,9 @@ end
 function M.context_range(bufnr, startln, endln, column)
 	local marks = vim.api.nvim_buf_get_extmarks(
 		bufnr,
-
-
 		M.o.ns,
-		{ startln - 1, 0 },
-		{ endln + 1, 0 },
+		{ startln, 0 },
+		{ endln, 0 },
 		{ details = true }
 	)
 	-- if true then return marks end
