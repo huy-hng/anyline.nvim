@@ -1,7 +1,7 @@
 local M = {}
 
-local opts = require('indent_line.default_opts')
-local utils = require('indent_line.utils')
+local opts = require('anyline.default_opts')
+local utils = require('anyline.utils')
 
 local fps = opts.fps
 local mspf = 1000 / fps

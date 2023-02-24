@@ -1,3 +1,4 @@
+
 return {
 	indent_char = '▏',
 	ft_ignore = {

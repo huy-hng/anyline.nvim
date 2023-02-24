@@ -1,9 +1,9 @@
 local M = {}
 
-local colors = require('indent_line.colors')
-local opts = require('indent_line.default_opts')
-local utils = require('indent_line.utils')
-local markager = require('indent_line.markager')
+local colors = require('anyline.colors')
+local opts = require('anyline.default_opts')
+local utils = require('anyline.utils')
+local markager = require('anyline.markager')
 
 local function delay_marks(bufnr, marks, hls, move_delay, color_delay, char)
 	local timers = {}

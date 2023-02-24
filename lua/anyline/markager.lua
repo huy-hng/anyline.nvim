@@ -1,5 +1,5 @@
 local M = {}
-local def = require('indent_line.default_opts')
+local def = require('anyline.default_opts')
 
 ---@alias mark_id number
 ---@alias mark_info { row: number, col: number, hl: string, char: string? } saved representation of extmark
@@ -11,7 +11,7 @@ M.buffer_marks = {}
 M.reverse_marks = {}
 
 M.o = {
-	ns = vim.api.nvim_create_namespace('IndentLine'),
+	ns = vim.api.nvim_create_namespace('AnyLine'),
 }
 
 function M.get_buffer_marks(bufnr)
@@ -53,7 +53,7 @@ function M.update_extmark(bufnr, mark_id, hl, char, extra_opts)
 end
 
 function M.remove_all_marks(bufnr)
-	local ns = vim.api.nvim_create_namespace('IndentLine')
+	local ns = vim.api.nvim_create_namespace('AnyLine')
 	bufnr = bufnr or vim.api.nvim_get_current_buf()
 	vim.api.nvim_buf_clear_namespace(bufnr, ns, 0, -1)
 end

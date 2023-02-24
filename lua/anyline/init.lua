@@ -1,23 +1,23 @@
 local M = {}
-R('indent_line.markager')
-R('indent_line.setter')
-R('indent_line.context')
-R('indent_line.animate')
-R('indent_line.default_opts')
-R('indent_line.utils')
+R('anyline.markager')
+R('anyline.setter')
+R('anyline.context')
+R('anyline.animate')
+R('anyline.default_opts')
+R('anyline.utils')
 
-local opts = require('indent_line.default_opts')
-local cache = require('indent_line.cache')
-local markager = require('indent_line.markager')
-local setter = require('indent_line.setter')
-local context = require('indent_line.context')
-local Debounce = require('indent_line.debounce')
-local animate = require('indent_line.animate')
+local opts = require('anyline.default_opts')
+local cache = require('anyline.cache')
+local markager = require('anyline.markager')
+local setter = require('anyline.setter')
+local context = require('anyline.context')
+local Debounce = require('anyline.debounce')
+local animate = require('anyline.animate')
 
 function M.setup(user_opts)
-	Highlight(0, 'IndentLine', { link = opts.highlight })
-	Highlight(0, 'IndentLineContext', { link = opts.context_highlight })
-	vim.api.nvim_create_namespace('IndentLine')
+	Highlight(0, 'AnyLine', { link = opts.highlight })
+	Highlight(0, 'AnyLineContext', { link = opts.context_highlight })
+	vim.api.nvim_create_namespace('AnyLine')
 	M.create_autocmds()
 end
 
@@ -42,16 +42,17 @@ function M.update(data)
 	end)
 end
 
---- start indentline autocmds
+--- start AnyLine autocmds
 function M.create_autocmds()
 	local debounce_time = 50
 	local show_context = Debounce(context.show_context, debounce_time)
 	local update_context = Debounce(context.update_context, debounce_time)
-	local show_animation = animate.from_cursor { 'IndentLine', 'IndentLineContext' }
-	local hide_animation = animate.to_cursor { 'IndentLineContext', 'IndentLine' }
-	Augroup('IndentLine', {
+	local show_animation = animate.from_cursor { 'AnyLine', 'AnyLineContext' }
+	local hide_animation = animate.to_cursor { 'AnyLineContext', 'AnyLine' }
+	Augroup('AnyLine', {
 		Autocmd('WinLeave', function(data) --
-			context.hide_context(data.buf, hide_animation)
+			-- context.hide_context(data.buf, hide_animation)
+			context.hide_context(data.buf, nil, hide_animation)
 		end),
 		Autocmd({ 'CursorMoved', 'WinEnter' }, function(data) --
 			-- context.hide_context(data.buf, hide_animation)
@@ -69,11 +70,10 @@ function M.create_autocmds()
 			'BufWritePost',
 			'SessionLoadPost',
 		}, M.refresh),
-
 	})
 end
 
-function M.delete_autocmds() DeleteAugroup('IndentLine') end
+function M.delete_autocmds() DeleteAugroup('AnyLine') end
 -- M.delete_autocmds()
 M.setup()
 

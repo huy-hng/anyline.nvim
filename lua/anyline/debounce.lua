@@ -1,6 +1,6 @@
 local uv = vim.loop
 
----@class UfoDebounce
+---@class Debounce
 ---@field timer vim.loop.Timer
 ---@field fn function
 ---@field args table
@@ -12,7 +12,7 @@ local Debounce = {}
 ---@param fn function
 ---@param wait number
 ---@param leading? boolean
----@return UfoDebounce
+---@return Debounce
 function Debounce:new(fn, wait, leading)
 	vim.validate {
 		fn = { fn, 'function' },

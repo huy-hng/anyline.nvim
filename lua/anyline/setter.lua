@@ -1,9 +1,9 @@
 local M = {}
 
-local cache = require('indent_line.cache')
-local markager = require('indent_line.markager')
-local utils = require('indent_line.utils')
-local ns = vim.api.nvim_create_namespace('IndentLine')
+local cache = require('anyline.cache')
+local markager = require('anyline.markager')
+local utils = require('anyline.utils')
+local ns = vim.api.nvim_create_namespace('AnyLine')
 
 function M.set_marks(bufnr)
 	local marks = cache.buffer_caches[bufnr]
