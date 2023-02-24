@@ -53,6 +53,7 @@ function M.calc_delay(range)
 	if fps == 0 then return 0 end
 
 	local factor = (range * opts.length_acceleration) + 1
+	-- factor = 1
 	local delay = math.ceil(1000 / (opts.lines_per_second * factor))
 	-- print('calc_delay: range, factor, delay = ', range, factor, delay)
 

@@ -98,26 +98,37 @@ function M.parse_opts(opts)
 	return { col = col, char = char, hl = hl, prio = prio }
 end
 
-function M.context_range(bufnr, startln, endln, column)
-	local marks = vim.api.nvim_buf_get_extmarks(
+function M.context_range(bufnr, startln, endln, target_column, ignore_color)
+	local marks = npcall(
+		vim.api.nvim_buf_get_extmarks,
 		bufnr,
 		M.o.ns,
 		{ startln, 0 },
 		{ endln, 0 },
 		{ details = true }
 	)
-	-- if true then return marks end
 
 	local new = {}
+
+	if not marks then return new end
+
 	for _, mark in ipairs(marks) do
 		local opts = mark[4]
-		local col = opts.virt_text_win_col
-		if col == column then
+		local column = opts.virt_text_win_col
+
+		local color = opts.virt_text[1][2]
+
+		-- if color == ignore_color then
+		-- if true then return marks end
+		-- 	print(ignore_color, color, column, mark[2])
+		-- end
+
+		if column == target_column then
 			opts.virt_text_pos = 'overlay'
 			table.insert(new, {
 				id = mark[1],
 				row = mark[2],
-				column = column,
+				column = target_column,
 				opts = opts,
 			})
 		end

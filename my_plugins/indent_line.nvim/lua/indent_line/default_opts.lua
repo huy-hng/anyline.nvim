@@ -11,9 +11,8 @@ return {
 	priority_context = 20,
 	-- animation
 	fps = 30,
-	animation_duration = 500,
-	speed_color_ratio = 0.9,
-	length_acceleration = 0.1,
+	length_acceleration = 0.01,
 
-	lines_per_second = 10,
+	lines_per_second = 50,
+	trail_length = 10,
 }

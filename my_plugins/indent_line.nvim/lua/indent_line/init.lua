@@ -46,6 +46,7 @@ end
 function M.create_autocmds()
 	local debounce_time = 50
 	local show_context = Debounce(context.show_context, debounce_time)
+	local update_context = Debounce(context.update_context, debounce_time)
 	local show_animation = animate.from_cursor { 'IndentLine', 'IndentLineContext' }
 	local hide_animation = animate.to_cursor { 'IndentLineContext', 'IndentLine' }
 	Augroup('IndentLine', {
@@ -53,8 +54,9 @@ function M.create_autocmds()
 			context.hide_context(data.buf, hide_animation)
 		end),
 		Autocmd({ 'CursorMoved', 'WinEnter' }, function(data) --
-			context.hide_context(data.buf, hide_animation)
-			show_context(data.buf, show_animation, hide_animation)
+			-- context.hide_context(data.buf, hide_animation)
+			-- show_context(data.buf, show_animation)
+			update_context(data.buf, show_animation, hide_animation)
 		end),
 		-- Autocmd({ 'TextChanged', 'TextChangedI' }, M.update),
 		Autocmd({
@@ -67,6 +69,7 @@ function M.create_autocmds()
 			'BufWritePost',
 			'SessionLoadPost',
 		}, M.refresh),
+
 	})
 end
 
