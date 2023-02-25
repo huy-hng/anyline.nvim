@@ -6,7 +6,7 @@ local uv = vim.loop
 ---@field args table
 ---@field wait number
 ---@field leading? boolean
----@overload fun(fn: function, wait: number, leading?: boolean): UfoDebounce
+---overload fun(fn: function, wait: number, leading?: boolean): Debounce
 local Debounce = {}
 
 ---@param fn function
@@ -14,6 +14,7 @@ local Debounce = {}
 ---@param leading? boolean
 ---@return Debounce
 function Debounce:new(fn, wait, leading)
+	P(fn)
 	vim.validate {
 		fn = { fn, 'function' },
 		wait = { wait, 'number' },

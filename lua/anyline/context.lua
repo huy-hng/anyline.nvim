@@ -3,6 +3,7 @@ local M = {}
 local cache = require('anyline.cache')
 local markager = require('anyline.markager')
 local utils = require('anyline.utils')
+local ani_manager = require('anyline.animation_manager')
 
 local function current_indentation(bufnr, line)
 	local indents = cache.get_cache(bufnr).lines[line]
@@ -54,7 +55,7 @@ end
 
 ---@param ctx1 context | nil
 ---@param ctx2 context | nil
-local function is_same_context(ctx1, ctx2)
+function M.is_same_context(ctx1, ctx2)
 	ctx2 = ctx2 or M.current_ctx
 	if not ctx1 or not ctx2 then return end
 	--stylua: ignore
@@ -80,17 +81,18 @@ local function set_context(bufnr, ctx)
 	end
 end
 
-function M.remove_running_animations()
-	if M.last_show_animation then utils.cancel_timers(M.last_show_animation) end
-	if M.last_hide_animation then utils.cancel_timers(M.last_hide_animation) end
-end
-
 function M.hide_context(bufnr, ctx, animation)
 	ctx = ctx or M.current_ctx
 
-	-- P('remove', ctx)
 	animation = animation or set_context
-	if ctx then M.last_hide_animation = animation(bufnr, ctx) end
+
+	if ctx then
+		ani_manager.cancel_animation(ctx)
+		vim.schedule(function()
+			local timers = animation(bufnr, ctx)
+			ani_manager.add_animation(ctx, timers)
+		end)
+	end
 end
 
 function M.show_context(bufnr, ctx, animation)
@@ -98,20 +100,24 @@ function M.show_context(bufnr, ctx, animation)
 	if not ctx then return end
 
 	animation = animation or set_context
-	M.last_show_animation = animation(bufnr, ctx)
+
+	ani_manager.cancel_animation(ctx)
+
+	vim.schedule(function()
+		local timers = animation(bufnr, ctx)
+		ani_manager.add_animation(ctx, timers)
+	end)
 end
 
 function M.update_context(bufnr, show_animation, hide_animation)
 	local ctx = M.get_context_info(bufnr)
-	if is_same_context(ctx, M.current_ctx) then return end
+	if M.is_same_context(ctx, M.current_ctx) then return end
 
-	local winid = vim.api.nvim_get_current_win()
 	if
 		M.current_ctx
-		and not is_same_context(ctx, M.current_ctx)
-		and winid == M.current_ctx.winid
-	then --
-		if bufnr == M.current_ctx.bufnr then M.remove_running_animations() end
+		and not M.is_same_context(ctx, M.current_ctx)
+		and M.current_ctx.winid == vim.api.nvim_get_current_win()
+	then
 		M.hide_context(bufnr, M.current_ctx, hide_animation)
 	end
 

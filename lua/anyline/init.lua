@@ -1,10 +1,11 @@
 local M = {}
-R('anyline.markager')
-R('anyline.setter')
-R('anyline.context')
-R('anyline.animate')
-R('anyline.default_opts')
-R('anyline.utils')
+-- R('anyline.markager')
+-- R('anyline.setter')
+-- R('anyline.context')
+-- R('anyline.animate')
+-- R('anyline.animation_manager')
+-- R('anyline.default_opts')
+-- R('anyline.utils')
 
 local opts = require('anyline.default_opts')
 local cache = require('anyline.cache')
@@ -15,8 +16,8 @@ local Debounce = require('anyline.debounce')
 local animate = require('anyline.animate')
 
 function M.setup(user_opts)
-	Highlight(0, 'AnyLine', { link = opts.highlight })
-	Highlight(0, 'AnyLineContext', { link = opts.context_highlight })
+	vim.api.nvim_set_hl(0, 'AnyLine', { link = opts.highlight })
+	vim.api.nvim_set_hl(0, 'AnyLineContext', { link = opts.context_highlight })
 	vim.api.nvim_create_namespace('AnyLine')
 	M.create_autocmds()
 end
@@ -35,33 +36,28 @@ end
 
 local function update(data)
 	local bufnr = data.buf
-	-- vim.schedule(function()
 	cache.update_cache(bufnr)
 	setter.update_marks(bufnr)
 
 	context.current_ctx = nil
 
 	context.show_context(bufnr)
-	-- end)
 end
 
 local show_animation = animate.from_cursor { 'AnyLine', 'AnyLineContext' }
 local hide_animation = animate.to_cursor { 'AnyLineContext', 'AnyLine' }
 
-local function update_context(data)
-	context.update_context(data.buf, show_animation, hide_animation)
-end
+local function update_context(data) context.update_context(data.buf, show_animation, hide_animation) end
 
 --- start AnyLine autocmds
 function M.create_autocmds()
-	update_context = Debounce(update_context, opts.debounce_time)
 	Augroup('AnyLine', {
 		Autocmd('WinLeave', function(data)
 			local ctx = context.get_context_info(data.buf)
 			if not ctx then return end
 			hide_animation(data.buf, ctx)
 		end),
-		Autocmd({ 'CursorMoved' }, update_context),
+		Autocmd({ 'CursorMoved' }, Debounce(update_context, opts.debounce_time)),
 
 		Autocmd({ 'TextChanged', 'TextChangedI' }, update),
 		Autocmd({
@@ -79,6 +75,6 @@ end
 
 function M.delete_autocmds() DeleteAugroup('AnyLine') end
 -- M.delete_autocmds()
-M.setup()
+-- M.setup()
 
 return M
