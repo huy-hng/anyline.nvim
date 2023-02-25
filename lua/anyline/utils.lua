@@ -1,10 +1,6 @@
 local M = {}
 local opts = require('anyline.default_opts')
 
-local fps = opts.fps
-local mspf = 1000 / fps
-local length_acceleration = opts.length_acceleration
-
 function M.generate_number_range(start, stop, step)
 	local numbers = {}
 	for num = start, stop, step or 1 do
@@ -50,11 +46,11 @@ function M.cancel_timers(timers)
 end
 
 function M.calc_delay(range)
-	if fps == 0 then return 0 end
+	if opts.lines_per_second == 0 then return 0 end
 
-	local factor = (range * opts.length_acceleration) + 1
-	-- factor = 1
+	local factor = ((range or 0) * opts.length_acceleration) + 1
 	local delay = math.ceil(1000 / (opts.lines_per_second * factor))
+
 	-- print('calc_delay: range, factor, delay = ', range, factor, delay)
 
 	return delay

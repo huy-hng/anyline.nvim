@@ -2,7 +2,6 @@ local M = {}
 
 local context_manager = require('anyline.context')
 
----@alias context { startln: number, endln: number, column: number, bufnr: number }
 ---@type { ctx: context, timers: table }[]
 local animations = {}
 

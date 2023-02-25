@@ -11,9 +11,12 @@ local function current_indentation(bufnr, line)
 	return column or -1
 end
 
----@return { startln: number, endln: number, column: number, bufnr: number } | nil
-local function get_context_info(bufnr)
-	local cursor = vim.api.nvim_win_get_cursor(0)[1] - 1
+---@alias context { startln: number, endln: number, column: number, bufnr: number, winid: number }
+
+---@return context | nil
+function M.get_context_info(bufnr)
+	local winid = vim.api.nvim_get_current_win()
+	local cursor = vim.api.nvim_win_get_cursor(winid)[1] - 1
 
 	local column = current_indentation(bufnr, cursor)
 	local next = current_indentation(bufnr, cursor + 1)
@@ -37,33 +40,41 @@ local function get_context_info(bufnr)
 		local startln = line_pair[1]
 		local endln = line_pair[2]
 
-		if cursor >= startln and cursor <= endln then --
-			-- print(startln, cursor, endln)
-			-- print('returning')
-			return { startln = startln, endln = endln, column = column, bufnr = bufnr }
+		if cursor >= startln and cursor <= endln then
+			return {
+				startln = startln,
+				endln = endln,
+				column = column,
+				bufnr = bufnr,
+				winid = winid,
+			}
 		end
 	end
 end
 
-local function is_same_context(context1, context2)
-	context2 = context2 or M.current_ctx
-	if not context1 or not context2 then return end
-
-	local column = context1.column == context2.column
-	local startln = context1.startln == context2.startln
-	local endln = context1.endln == context2.endln
-	if column and startln and endln then return true end
+---@param ctx1 context | nil
+---@param ctx2 context | nil
+local function is_same_context(ctx1, ctx2)
+	ctx2 = ctx2 or M.current_ctx
+	if not ctx1 or not ctx2 then return end
+	--stylua: ignore
+	if ctx1.column  == ctx2.column and
+	   ctx1.startln == ctx2.startln and
+	   ctx1.endln   == ctx2.endln and
+	   ctx1.bufnr   == ctx2.bufnr and
+	   ctx1.winid   == ctx2.winid
+	then return true end
 end
 
-local function set_context(bufnr, ctx, hl, char)
+local function set_context(bufnr, ctx)
 	local marks = markager.context_range(bufnr, ctx.startln, ctx.endln, ctx.column)
 	for _, mark in ipairs(marks) do
 		markager.set_extmark(
-			bufnr,
+			ctx.bufnr,
 			mark.row,
 			mark.column,
-			hl or 'AnyLineContext',
-			char,
+			'AnyLineContext',
+			nil,
 			{ priority = mark.opts.priority + 1, id = mark.id }
 		)
 	end
@@ -76,36 +87,38 @@ end
 
 function M.hide_context(bufnr, ctx, animation)
 	ctx = ctx or M.current_ctx
-	if ctx then
-		M.last_hide_animation = animation(bufnr, ctx, 'AnyLine')
-	end
+
+	-- P('remove', ctx)
+	animation = animation or set_context
+	if ctx then M.last_hide_animation = animation(bufnr, ctx) end
 end
 
 function M.show_context(bufnr, ctx, animation)
+	ctx = ctx or M.get_context_info(bufnr)
 	if not ctx then return end
-	-- if M.last_show_animation then utils.cancel_timers(M.last_show_animation) end
-	M.last_show_animation = animation(bufnr, ctx, 'AnyLineContext')
+
+	animation = animation or set_context
+	M.last_show_animation = animation(bufnr, ctx)
 end
 
 function M.update_context(bufnr, show_animation, hide_animation)
-	local ctx = get_context_info(bufnr)
-	if is_same_context(ctx) then return end
+	local ctx = M.get_context_info(bufnr)
+	if is_same_context(ctx, M.current_ctx) then return end
 
-	if M.current_ctx and not is_same_context(ctx) then --
+	local winid = vim.api.nvim_get_current_win()
+	if
+		M.current_ctx
+		and not is_same_context(ctx, M.current_ctx)
+		and winid == M.current_ctx.winid
+	then --
 		if bufnr == M.current_ctx.bufnr then M.remove_running_animations() end
-
-		local context_fn = hide_animation and hide_animation or set_context
-		M.last_hide_animation = context_fn(bufnr, M.current_ctx)
+		M.hide_context(bufnr, M.current_ctx, hide_animation)
 	end
 
 	M.current_ctx = ctx
-
 	if not ctx then return end
 
-	local context_fn = show_animation and show_animation or set_context
-
-	-- M.last_show_animation = context_fn(bufnr, ctx)
-	M.show_context(bufnr, ctx, context_fn)
+	M.show_context(bufnr, ctx, show_animation)
 end
 
 return M

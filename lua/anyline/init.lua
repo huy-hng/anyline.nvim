@@ -21,8 +21,9 @@ function M.setup(user_opts)
 	M.create_autocmds()
 end
 
-function M.refresh(data)
+local function hard_refresh(data)
 	local bufnr = data.buf
+
 	cache.update_cache(bufnr)
 
 	markager.remove_all_marks(bufnr)
@@ -32,34 +33,37 @@ function M.refresh(data)
 	context.show_context(bufnr)
 end
 
-function M.update(data)
+local function update(data)
 	local bufnr = data.buf
-	vim.schedule(function()
-		cache.update_cache(bufnr)
-		setter.update_marks(bufnr)
-		context.current_ctx = nil
-		context.show_context(bufnr)
-	end)
+	-- vim.schedule(function()
+	cache.update_cache(bufnr)
+	setter.update_marks(bufnr)
+
+	context.current_ctx = nil
+
+	context.show_context(bufnr)
+	-- end)
+end
+
+local show_animation = animate.from_cursor { 'AnyLine', 'AnyLineContext' }
+local hide_animation = animate.to_cursor { 'AnyLineContext', 'AnyLine' }
+
+local function update_context(data)
+	context.update_context(data.buf, show_animation, hide_animation)
 end
 
 --- start AnyLine autocmds
 function M.create_autocmds()
-	local debounce_time = 50
-	local show_context = Debounce(context.show_context, debounce_time)
-	local update_context = Debounce(context.update_context, debounce_time)
-	local show_animation = animate.from_cursor { 'AnyLine', 'AnyLineContext' }
-	local hide_animation = animate.to_cursor { 'AnyLineContext', 'AnyLine' }
+	update_context = Debounce(update_context, opts.debounce_time)
 	Augroup('AnyLine', {
-		Autocmd('WinLeave', function(data) --
-			-- context.hide_context(data.buf, hide_animation)
-			context.hide_context(data.buf, nil, hide_animation)
+		Autocmd('WinLeave', function(data)
+			local ctx = context.get_context_info(data.buf)
+			if not ctx then return end
+			hide_animation(data.buf, ctx)
 		end),
-		Autocmd({ 'CursorMoved', 'WinEnter' }, function(data) --
-			-- context.hide_context(data.buf, hide_animation)
-			-- show_context(data.buf, show_animation)
-			update_context(data.buf, show_animation, hide_animation)
-		end),
-		-- Autocmd({ 'TextChanged', 'TextChangedI' }, M.update),
+		Autocmd({ 'CursorMoved' }, update_context),
+
+		Autocmd({ 'TextChanged', 'TextChangedI' }, update),
 		Autocmd({
 			'FileChangedShellPost',
 			'TextChanged',
@@ -69,7 +73,7 @@ function M.create_autocmds()
 			'BufWinEnter',
 			'BufWritePost',
 			'SessionLoadPost',
-		}, M.refresh),
+		}, hard_refresh),
 	})
 end
 
