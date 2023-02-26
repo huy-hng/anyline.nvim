@@ -91,7 +91,7 @@ function M.create_colors(start_color, end_color, steps, ns)
 		local name = start_color .. 'To' .. end_color .. string.format('%.2f', i)
 
 		table.insert(hl_names, name)
-		Highlight(ns or 0, name, { fg = '#' .. between })
+		vim.api.nvim_set_hl(ns or 0, name, { fg = '#' .. between })
 	end
 
 	return hl_names

@@ -1,5 +1,7 @@
 local M = {}
 
+local utils = require('anyline.utils')
+
 ---@alias line number
 ---@alias column number
 ---@alias line_cache table<line, column[]>
@@ -9,8 +11,8 @@ local M = {}
 M.buffer_caches = {}
 
 local function get_treesitter(bufnr)
-	local ts_query = nrequire('nvim-treesitter.query')
-	local ts_indent = nrequire('nvim-treesitter.indent')
+	local ts_query = utils.nrequire('nvim-treesitter.query')
+	local ts_indent = utils.nrequire('nvim-treesitter.indent')
 	local use_ts_indent = ts_query and ts_indent and ts_query.has_indents(vim.bo[bufnr].filetype)
 	return ts_query, ts_indent
 end
@@ -89,9 +91,7 @@ function M.cache_lines(ts_indent, indent_width, lines)
 
 		-- if indent in line is 0, skip line
 		local total_indent = ts_indent.get_indent(linenr)
-		if total_indent == 0 then
-			goto continue
-		end
+		if total_indent == 0 then goto continue end
 
 		local indents = total_indent / indent_width
 

@@ -1,5 +1,6 @@
 local M = {}
 local def = require('anyline.default_opts')
+local utils = require('anyline.utils')
 
 ---@alias mark_id number
 ---@alias mark_info { row: number, col: number, hl: string, char: string? } saved representation of extmark
@@ -99,7 +100,7 @@ function M.parse_opts(opts)
 end
 
 function M.context_range(bufnr, startln, endln, target_column, ignore_color)
-	local marks = npcall(
+	local marks = utils.npcall(
 		vim.api.nvim_buf_get_extmarks,
 		bufnr,
 		M.o.ns,

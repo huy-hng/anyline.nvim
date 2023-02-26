@@ -1,6 +1,19 @@
 local M = {}
 local opts = require('anyline.default_opts')
 
+
+local function handle_pcall(status, ...) --
+	return status and ... or nil
+end
+
+function M.nrequire(name) --
+	return handle_pcall(pcall(require, name))
+end
+
+function M.npcall(fn,...)
+	return handle_pcall(pcall(fn, ...))
+end
+
 function M.generate_number_range(start, stop, step)
 	local numbers = {}
 	for num = start, stop, step or 1 do
@@ -118,7 +131,8 @@ end
 
 function M.remove_extmarks(marks, delay, bufnr, ns)
 	return M.delay_map(marks, delay, function(id) --
-		nvim.schedule(vim.api.nvim_buf_del_extmark, bufnr, ns, id)
+		-- nvim.schedule(vim.api.nvim_buf_del_extmark, bufnr, ns, id)
+		vim.schedule(function()vim.api.nvim_buf_del_extmark(bufnr, ns, id) end)
 	end)
 end
 
@@ -130,11 +144,14 @@ function M.delay_map(iterable, delay, fn, callback)
 		if delay == 0 then
 			fn(mark)
 		else
-			local timer = nvim.defer((i - 1) * delay, fn, mark)
+			local timer = vim.defer_fn(function()fn(mark) end, (i - 1) * delay)
+			--local timer = nvim.defer((i - 1) * delay, fn, mark)
 			table.insert(timers, timer)
 		end
 		if type(callback) == 'function' and i == #iterable then
-			local timer = nvim.defer((i - 1) * delay, callback)
+
+			local timer = vim.defer_fn(function() callback(mark) end, (i - 1) * delay)
+			--local timer = nvim.defer((i - 1) * delay, callback)
 		end
 	end
 

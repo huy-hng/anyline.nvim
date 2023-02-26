@@ -14,7 +14,6 @@ local Debounce = {}
 ---@param leading? boolean
 ---@return Debounce
 function Debounce:new(fn, wait, leading)
-	P(fn)
 	vim.validate {
 		fn = { fn, 'function' },
 		wait = { wait, 'number' },
