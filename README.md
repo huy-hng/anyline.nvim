@@ -16,10 +16,10 @@ Note: cursor animation comes from [Neovide](https://neovide.dev/)
 Use the package manager of your choice
 ```lua
 require('lazy').setup({
-	{
-		'huy-hng/anyline.nvim',
-		dependencies = { 'nvim-treesitter/nvim-treesitter' }
-	},
+    {
+        'huy-hng/anyline.nvim',
+        dependencies = { 'nvim-treesitter/nvim-treesitter' }
+    },
 })
 ```
 
