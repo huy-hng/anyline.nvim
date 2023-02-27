@@ -7,6 +7,13 @@ local opts = require('anyline.default_opts')
 local markager = require('anyline.markager')
 local Debounce = require('anyline.debounce')
 
+local function skip_buffer(bufnr)
+	-- TODO: include window types and other filters
+	local filetypes = { 'sql', 'vimwiki' }
+	local ft = vim.bo[bufnr].filetype
+	if not vim.tbl_contains(filetypes, ft) then return true end
+end
+
 local function hard_refresh(data)
 	local bufnr = data.buf
 
