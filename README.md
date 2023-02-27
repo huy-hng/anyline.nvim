@@ -2,9 +2,11 @@
 Indentation Lines with Animations for Neovim
 
 Thought about naming this animeline.nvim but that might have been a little to cringe
+This is my first attempt at creating neovim plugins and more importantly, my quest on creating useless plugins.
 
 > **Warning**
 > Highly experimental.
+> Only tested in neovide and neovim inside terminal
 > Currently no options available, but will change shortly
 
 ### Showcase
@@ -22,7 +24,6 @@ require('lazy').setup({
     },
 })
 ```
-
 ### Usage
 ```lua
 require('anyline').setup()
