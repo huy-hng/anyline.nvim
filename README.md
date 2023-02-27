@@ -5,6 +5,7 @@ Thought about naming this animeline.nvim but that might have been a little to cr
 
 > **Warning**
 > Highly experimental.
+> Only tested in neovide and neovim inside terminal
 > Currently no options available, but will change shortly
 
 ### Showcase
@@ -22,7 +23,6 @@ require('lazy').setup({
     },
 })
 ```
-
 ### Usage
 ```lua
 require('anyline').setup()
