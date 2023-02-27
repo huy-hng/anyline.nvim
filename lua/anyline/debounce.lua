@@ -1,7 +1,8 @@
 local uv = vim.loop
 
+
 ---@class Debounce
----@field timer vim.loop.Timer
+---@field timer uv.uv_timer_t | nil
 ---@field fn function
 ---@field args table
 ---@field wait number
@@ -34,6 +35,7 @@ function Debounce:call(...)
 	if not timer then
 		timer = uv.new_timer()
 		self.timer = timer
+		if not timer then return end
 
 		timer:start(
 			self.wait,
