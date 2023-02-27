@@ -1,7 +1,6 @@
 local M = {}
 local opts = require('anyline.default_opts')
 
-
 local function handle_pcall(status, ...) --
 	return status and ... or nil
 end
@@ -10,9 +9,7 @@ function M.nrequire(name) --
 	return handle_pcall(pcall(require, name))
 end
 
-function M.npcall(fn,...)
-	return handle_pcall(pcall(fn, ...))
-end
+function M.npcall(fn, ...) return handle_pcall(pcall(fn, ...)) end
 
 function M.generate_number_range(start, stop, step)
 	local numbers = {}
@@ -32,12 +29,8 @@ end
 
 function M.get_scroll_offset()
 	local win = vim.fn.winsaveview()
-	local leftcol = win.leftcol
-
-	local topline = win.topline
-	local col = win.col
-	local lnum = win.lnum
-	return leftcol
+	---@diagnostic disable-next-line: undefined-field
+	return win.leftcol
 end
 
 function M.add_timer_callback(timers, callback)
@@ -131,8 +124,7 @@ end
 
 function M.remove_extmarks(marks, delay, bufnr, ns)
 	return M.delay_map(marks, delay, function(id) --
-		-- nvim.schedule(vim.api.nvim_buf_del_extmark, bufnr, ns, id)
-		vim.schedule(function()vim.api.nvim_buf_del_extmark(bufnr, ns, id) end)
+		vim.schedule(function() vim.api.nvim_buf_del_extmark(bufnr, ns, id) end)
 	end)
 end
 
@@ -144,18 +136,50 @@ function M.delay_map(iterable, delay, fn, callback)
 		if delay == 0 then
 			fn(mark)
 		else
-			local timer = vim.defer_fn(function()fn(mark) end, (i - 1) * delay)
-			--local timer = nvim.defer((i - 1) * delay, fn, mark)
+			local timer = vim.defer_fn(function() fn(mark) end, (i - 1) * delay)
 			table.insert(timers, timer)
 		end
 		if type(callback) == 'function' and i == #iterable then
-
 			local timer = vim.defer_fn(function() callback(mark) end, (i - 1) * delay)
-			--local timer = nvim.defer((i - 1) * delay, callback)
+			table.insert(timers, timer)
 		end
 	end
 
 	return timers
 end
+
+function table.copy(obj, seen)
+	-- Handle non-tables and previously-seen tables.
+	if type(obj) ~= 'table' then return obj end
+	if seen and seen[obj] then return seen[obj] end
+
+	-- New table; mark it as seen and copy recursively.
+	local s = seen or {}
+	local res = {}
+	s[obj] = res
+	for k, v in pairs(obj) do
+		res[table.copy(k, s)] = table.copy(v, s)
+	end
+	return setmetatable(res, getmetatable(obj))
+end
+
+function table.add(...)
+	local new = select(1, ...)
+	new = type(new) == 'table' and new or { new }
+
+	for _, list in ipairs { select(2, ...) } do
+		if type(list) ~= 'table' then
+			table.insert(new, list)
+			goto continue
+		end
+
+		for _, val in ipairs(list) do
+			table.insert(new, val)
+		end
+		::continue::
+	end
+	return new
+end
+
 
 return M
