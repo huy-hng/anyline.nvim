@@ -1,9 +1,32 @@
 # anyline.nvim
-Neovim Indentation Line with Animations
+Indentation Lines with Animations for Neovim
 
-Add indentation lines to you buffers that show the current context, as well as animate the context.
+Thought about naming this animeline.nvim but that might have been a little to cringe
 
+> **Warning**
+> Highly experimental.
+> Currently no options available, but will change shortly
+
+### Showcase
 https://user-images.githubusercontent.com/33007237/221636629-bd10a0aa-f302-40f8-9d34-e0f12cd7c44b.mp4
 
-#TODOS
+Note: cursor animation comes from [Neovide](https://neovide.dev/)
+
+### Installation
+Use the package manager of your choice
+```lua
+require('lazy').setup({
+	{
+		'huy-hng/anyline.nvim',
+		dependencies = { 'nvim-treesitter/nvim-treesitter' }
+	},
+})
+```
+
+### Usage
+```lua
+require('anyline').setup()
+```
+
+# TODOS
 - [ ] add user opts to setup function
