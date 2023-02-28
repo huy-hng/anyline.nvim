@@ -4,7 +4,7 @@ Indentation Lines with Animations for Neovim
 Thought about naming this animeline.nvim but that might have been a little to cringe
 This is my first attempt at creating neovim plugins and more importantly, my quest on creating useless plugins.
 
-> **Warning**
+> **Warning**  
 > Highly experimental.  
 > Only tested in neovide and neovim inside terminal  
 > Super buggy  
@@ -64,3 +64,4 @@ Lazy loading should work. I use `event = 'VeryLazy'` as shown above.
 
 # TODOS
 - [X] add user opts to setup function
+- [ ] nice api for animation, so anyone can create dope looking animations
