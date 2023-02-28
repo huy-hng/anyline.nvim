@@ -53,8 +53,9 @@ end
 
 function M.calc_delay(range)
 	if opts.lines_per_second == 0 then return 0 end
+	range = math.abs(range or 0)
 
-	local factor = ((range or 0) * opts.length_acceleration) + 1
+	local factor = (range * opts.length_acceleration) + 1
 	local delay = math.ceil(1000 / (opts.lines_per_second * factor))
 
 	-- print('calc_delay: range, factor, delay = ', range, factor, delay)
@@ -62,64 +63,26 @@ function M.calc_delay(range)
 	return delay
 end
 
-function M.calc_delay_ratios(before, after)
-	before = math.abs(before)
-	after = math.abs(after)
+function M.calc_delay_ratios(above, below)
+	above = math.abs(above)
+	below = math.abs(below)
 
-	local total = before + after
+	local total = (above + below) - 1
 	local delay = M.calc_delay(total)
 
-	local delay_top = delay
-	local delay_bot = delay
+	local delay_above = delay
+	local delay_below = delay
 
-	local top_ratio = before / total
-	local bot_ratio = after / total
+	local ratio_above = above / total
+	local ratio_below = below / total
 
-	if before > after then
-		delay_bot = bot_ratio == 0 and 0 or math.max((top_ratio / bot_ratio) * delay, 0)
+	if above < below then
+		delay_above = ratio_above == 0 and 0 or (ratio_below / ratio_above) * delay
 	else
-		delay_top = top_ratio == 0 and 0 or math.max((bot_ratio / top_ratio) * delay, 0)
+		delay_below = ratio_below == 0 and 0 or (ratio_above / ratio_below) * delay
 	end
 
-	-- print(delay_top, delay_bot)
-	return delay_top, delay_bot
-end
-
-function M.get_marks_split_by_cursor(bufnr, namespace)
-	local marks = vim.api.nvim_buf_get_extmarks(bufnr, namespace, 0, -1, {})
-	local cursor_line = vim.api.nvim_win_get_cursor(0)[1] - 1
-
-	local before_cursor = {}
-	local after_cursor = {}
-
-	for _, mark in ipairs(marks) do
-		if mark[2] < cursor_line then
-			table.insert(before_cursor, mark[1])
-		else
-			table.insert(after_cursor, mark[1])
-		end
-	end
-
-	return before_cursor, after_cursor
-end
-
-function M.split_marks_by_cursor(marks)
-	table.sort(marks, function(a, b) return a[2] < b[2] end)
-
-	local cursor_line = vim.api.nvim_win_get_cursor(0)[1] - 1
-
-	local before_cursor = {}
-	local after_cursor = {}
-
-	for _, mark in ipairs(marks) do
-		if mark[2] < cursor_line then
-			table.insert(before_cursor, mark[1])
-		else
-			table.insert(after_cursor, mark[1])
-		end
-	end
-
-	return before_cursor, after_cursor
+	return delay_above, delay_below
 end
 
 function M.remove_extmarks(marks, delay, bufnr, ns)
@@ -132,15 +95,15 @@ function M.delay_map(iterable, delay, fn, callback)
 	local timers = {}
 	if not iterable then return end
 
-	for i, mark in ipairs(iterable) do
+	for i, item in ipairs(iterable) do
 		if delay == 0 then
-			fn(mark)
+			fn(item)
 		else
-			local timer = vim.defer_fn(function() fn(mark) end, (i - 1) * delay)
+			local timer = vim.defer_fn(function() fn(item) end, (i - 1) * delay)
 			table.insert(timers, timer)
 		end
 		if type(callback) == 'function' and i == #iterable then
-			local timer = vim.defer_fn(function() callback(mark) end, (i - 1) * delay)
+			local timer = vim.defer_fn(function() callback(item) end, (i - 1) * delay)
 			table.insert(timers, timer)
 		end
 	end
@@ -179,6 +142,10 @@ function table.add(...)
 		::continue::
 	end
 	return new
+end
+
+function math.clamp(x, lower, upper) --
+	return math.min(upper, math.max(x, lower))
 end
 
 return M
