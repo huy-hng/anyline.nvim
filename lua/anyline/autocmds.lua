@@ -24,7 +24,6 @@ local function hard_refresh(data)
 	markager.remove_all_marks(bufnr)
 	setter.set_marks(bufnr)
 
-	context.current_ctx = nil
 	context.show_context(bufnr)
 end
 
@@ -33,18 +32,15 @@ local function update(data)
 	cache.update_cache(bufnr)
 	setter.update_marks(bufnr)
 
-	context.current_ctx = nil
-
 	context.show_context(bufnr)
 end
 
-local show_animation = animate.from_cursor { 'AnyLine', 'AnyLineContext' }
-local hide_animation = animate.to_cursor { 'AnyLineContext', 'AnyLine' }
-
-local function update_context(data) context.update_context(data.buf, show_animation, hide_animation) end
 function M.delete() vim.api.nvim_del_augroup_by_name('AnyLine') end
 
 function M.create()
+	local function update_context(data)
+		context.update_context(data.buf, animate.show_animation, animate.hide_animation)
+	end
 	local updater = Debounce(update_context, opts.debounce_time)
 	local group = vim.api.nvim_create_augroup('AnyLine', { clear = true })
 
@@ -53,7 +49,7 @@ function M.create()
 		callback = function(data)
 			local ctx = context.get_context_info(data.buf)
 			if not ctx then return end
-			hide_animation(data.buf, ctx)
+			animate.hide_animation(data.buf, ctx)
 		end,
 	})
 

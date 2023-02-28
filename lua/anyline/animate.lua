@@ -5,6 +5,10 @@ local opts = require('anyline.opts').opts
 local utils = require('anyline.utils')
 local markager = require('anyline.markager')
 
+---@alias directions
+---| 'to_cursor'
+---| 'from_cursor'
+
 local function delay_marks(bufnr, marks, hls, move_delay, color_delay, char)
 	local timers = {}
 	local move_timers = utils.delay_map(marks, move_delay, function(mark)
@@ -24,24 +28,28 @@ local function delay_marks(bufnr, marks, hls, move_delay, color_delay, char)
 	return timers
 end
 
+---@param ctx any
+---@param cursor number
+---@param direction directions
 local function get_direction_locations(ctx, cursor, direction)
-	local toward_cursor = (direction or 0) == 1
+	local to_cursor = direction == 'to_cursor'
 	local startln = ctx.startln - 1
 	local endln = ctx.endln + 1
 
-	-- cursor = math.clamp(cursor, startln, endln)
-
 	--stylua: ignore start
-	local above_start = toward_cursor and startln or cursor
-	local above_end   = toward_cursor and cursor  or startln
-	local below_start = toward_cursor and endln   or cursor
-	local below_end   = toward_cursor and cursor  or endln
+	local above_start = to_cursor and startln or cursor
+	local above_end   = to_cursor and cursor  or startln
+	local below_start = to_cursor and endln   or cursor
+	local below_end   = to_cursor and cursor  or endln
 	--stylua: ignore end
 
 	-- above_end = above_end - 1
 	return above_start, above_end, below_start, below_end
 end
 
+---@param direction directions
+---@param color string[]
+---@return function
 local function move_line(direction, color)
 	local start_color = color[1]
 	local end_color = color[2]
@@ -110,12 +118,51 @@ local function move_line_test(direction, color, char)
 	end
 end
 
+---@alias animations
+---| 'to_cursor'
+---| 'from_cursor'
+---| 'top_down'
+---| 'bottom_up'
+---| 'none'
+
+local function no_animation(bufnr, ctx)
+	local marks = markager.context_range(bufnr, ctx.startln, ctx.endln, ctx.column)
+	for _, mark in ipairs(marks) do
+		markager.set_extmark(
+			ctx.bufnr,
+			mark.row,
+			mark.column,
+			'AnyLineContext',
+			nil,
+			{ priority = mark.opts.priority + 1, id = mark.id }
+		)
+	end
+end
+
 function M.from_cursor(color) --
-	return move_line(0, color)
+	return move_line('from_cursor', color)
 end
 
 function M.to_cursor(color) --
-	return move_line(1, color)
+	return move_line('to_cursor', color)
+end
+
+local animations = {
+	from_cursor = { show = M.from_cursor, hide = M.to_cursor },
+	to_cursor = { show = M.to_cursor, hide = M.from_cursor },
+	none = { show = no_animation, hide = no_animation },
+}
+
+function M.create_animations(animation)
+	local ani = animations[animation]
+
+	if not ani then
+		vim.notify('No such animation "' .. opts.animation .. '"', vim.log.levels.ERROR)
+		return no_animation
+	end
+
+	M.show_animation = ani.show { 'AnyLine', 'AnyLineContext' }
+	M.hide_animation = ani.hide { 'AnyLineContext', 'AnyLine' }
 end
 
 return M
