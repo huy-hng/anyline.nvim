@@ -125,17 +125,21 @@ end
 ---| 'bottom_up'
 ---| 'none'
 
-local function no_animation(bufnr, ctx)
-	local marks = markager.context_range(bufnr, ctx.startln, ctx.endln, ctx.column)
-	for _, mark in ipairs(marks) do
-		markager.set_extmark(
-			ctx.bufnr,
-			mark.row,
-			mark.column,
-			'AnyLineContext',
-			nil,
-			{ priority = mark.opts.priority + 1, id = mark.id }
-		)
+local function no_animation(color)
+	if type(color) == 'table' then color = color[2] end
+
+	return function(bufnr, ctx)
+		local marks = markager.context_range(bufnr, ctx.startln, ctx.endln, ctx.column)
+		for _, mark in ipairs(marks) do
+			markager.set_extmark(
+				ctx.bufnr,
+				mark.row,
+				mark.column,
+				color,
+				nil,
+				{ priority = mark.opts.priority + 1, id = mark.id }
+			)
+		end
 	end
 end
 
@@ -158,7 +162,7 @@ function M.create_animations(animation)
 
 	if not ani then
 		vim.notify('No such animation "' .. opts.animation .. '"', vim.log.levels.ERROR)
-		return no_animation
+		ani = animations.none
 	end
 
 	M.show_animation = ani.show { 'AnyLine', 'AnyLineContext' }
