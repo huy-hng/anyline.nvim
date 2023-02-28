@@ -9,6 +9,7 @@ This is my first attempt at creating neovim plugins and more importantly, my que
 > Only tested in neovide and neovim inside terminal
 > Currently no options available, but will change shortly
 
+
 ### Showcase
 https://user-images.githubusercontent.com/33007237/221636629-bd10a0aa-f302-40f8-9d34-e0f12cd7c44b.mp4
 
@@ -21,6 +22,7 @@ require('lazy').setup({
     {
         'huy-hng/anyline.nvim',
         dependencies = { 'nvim-treesitter/nvim-treesitter' }
+        event = 'VeryLazy',
     },
 })
 ```
