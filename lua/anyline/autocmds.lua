@@ -37,11 +37,18 @@ end
 
 function M.delete() vim.api.nvim_del_augroup_by_name('AnyLine') end
 
+local function update_context(data)
+	context.update_context(data.buf, animate.show_animation, animate.hide_animation)
+	-- vim.schedule(function() --
+	-- 	animate.last_cursor_pos = vim.api.nvim_win_get_cursor(0)[1] - 1
+	-- end)
+	vim.defer_fn(function() --
+		animate.last_cursor_pos = vim.api.nvim_win_get_cursor(0)[1] - 1
+	end, 200)
+end
+
 function M.create()
-	local function update_context(data)
-		context.update_context(data.buf, animate.show_animation, animate.hide_animation)
-	end
-	local updater = Debounce(update_context, opts.debounce_time)
+	local context_updater = Debounce(update_context, opts.debounce_time)
 	local group = vim.api.nvim_create_augroup('AnyLine', { clear = true })
 
 	autocmd('WinLeave', {
@@ -60,7 +67,7 @@ function M.create()
 
 	autocmd('CursorMoved', {
 		group = group,
-		callback = function(data) updater(data) end,
+		callback = function(data) context_updater(data) end,
 	})
 
 	autocmd({

@@ -1,7 +1,7 @@
 local M = {}
 
 function M.setup(user_opts)
-	require('anyline.opts').parse_opts(user_opts)
+	require('anyline.opts').parse_opts(user_opts or {})
 
 	local opts = require('anyline.opts').opts
 	vim.api.nvim_set_hl(0, 'AnyLine', { link = opts.highlight })
@@ -11,5 +11,6 @@ function M.setup(user_opts)
 	require('anyline.animate').create_animations(opts.animation)
 	require('anyline.autocmds').create()
 end
+-- M.setup()
 
 return M
