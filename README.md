@@ -5,9 +5,9 @@ Thought about naming this animeline.nvim but that might have been a little to cr
 This is my first attempt at creating neovim plugins and more importantly, my quest on creating useless plugins.
 
 > **Warning**
-> Highly experimental.
-> Only tested in neovide and neovim inside terminal
-> Currently no options available, but will change shortly
+> Highly experimental.  
+> Only tested in neovide and neovim inside terminal  
+> Super buggy  
 
 
 ### Showcase
@@ -31,7 +31,7 @@ require('lazy').setup({
 ```lua
 require('anyline').setup()
 ```
-Or just put `config = true` in lazy as shown above. 
+Or just put `config = true` in lazy as shown above.  
 Lazy loading should work. I use `event = 'VeryLazy'` as shown above.
 
 ### Config
@@ -63,4 +63,4 @@ Lazy loading should work. I use `event = 'VeryLazy'` as shown above.
 ```
 
 # TODOS
-- [ ] add user opts to setup function
+- [X] add user opts to setup function
