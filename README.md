@@ -31,10 +31,8 @@ require('lazy').setup({
 ```lua
 require('anyline').setup()
 ```
-Or just put ```config = true``` in lazy as shown above.
-
-Lazy loading should work. I use ```event = 'VeryLazy'``` as shown above
-altough ```lazy = false``` 
+Or just put `config = true` in lazy as shown above. 
+Lazy loading should work. I use `event = 'VeryLazy'` as shown above.
 
 ### Config
 ```lua
