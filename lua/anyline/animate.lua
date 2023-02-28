@@ -1,7 +1,7 @@
 local M = {}
 
 local colors = require('anyline.colors')
-local opts = require('anyline.default_opts')
+local opts = require('anyline.opts').opts
 local utils = require('anyline.utils')
 local markager = require('anyline.markager')
 

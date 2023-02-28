@@ -1,5 +1,5 @@
 local M = {}
-local opts = require('anyline.default_opts')
+local opts = require('anyline.opts').opts
 
 local function handle_pcall(status, ...) --
 	return status and ... or nil
@@ -180,6 +180,5 @@ function table.add(...)
 	end
 	return new
 end
-
 
 return M

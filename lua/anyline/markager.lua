@@ -1,5 +1,5 @@
 local M = {}
-local def = require('anyline.default_opts')
+local opts = require('anyline.opts').opts
 local utils = require('anyline.utils')
 
 ---@alias mark_id number
@@ -22,24 +22,24 @@ end
 
 ---@return mark_opts
 function M.build_mark_opts(col, hl, char, extra_opts)
-	local opts = {
-		virt_text = { { char or def.indent_char, hl or def.highlight } },
+	local mark_opts = {
+		virt_text = { { char or opts.indent_char, hl or opts.highlight } },
 		virt_text_win_col = col,
 		end_col = col + 1,
-		priority = M.o.priority or def.priority,
+		priority = M.o.priority or opts.priority,
 		virt_text_pos = 'overlay',
 		hl_mode = 'combine',
 		strict = false,
 	}
-	return vim.tbl_extend('force', opts, extra_opts or {})
+	return vim.tbl_extend('force', mark_opts, extra_opts or {})
 end
 
 function M.set_extmark(bufnr, row, col, hl, char, extra_opts)
 	if not vim.api.nvim_buf_is_valid(bufnr) then return end
 
-	local opts = M.build_mark_opts(col, hl, char, extra_opts)
+	local mark_opts = M.build_mark_opts(col, hl, char, extra_opts)
 	-- vim.schedule(function() vim.api.nvim_buf_set_extmark(bufnr, M.o.ns, row, 0, opts) end)
-	return vim.api.nvim_buf_set_extmark(bufnr, M.o.ns, row, 0, opts)
+	return vim.api.nvim_buf_set_extmark(bufnr, M.o.ns, row, 0, mark_opts)
 end
 
 function M.update_extmark(bufnr, mark_id, hl, char, extra_opts)
@@ -80,14 +80,14 @@ end
 ---@return mark | mark_with_id
 function M.parse_mark(mark)
 	if #mark == 3 then
-		local row, col, opts = unpack(mark)
-		col = opts.virt_text_win_col
-		return { row = row, col = col, opts = opts }
+		local row, col, mark_opts = unpack(mark)
+		col = mark_opts.virt_text_win_col
+		return { row = row, col = col, opts = mark_opts }
 	end
 
-	local id, row, col, opts = unpack(mark)
+	local id, row, col, mark_opts = unpack(mark)
 	col = opts.virt_text_win_col
-	return { id = id, row = row, col = col, opts = opts }
+	return { id = id, row = row, col = col, opts = mark_opts }
 end
 
 ---@return { col: number, char: string, hl: string, prio: number }
@@ -114,10 +114,10 @@ function M.context_range(bufnr, startln, endln, target_column, ignore_color)
 	if not marks then return new end
 
 	for _, mark in ipairs(marks) do
-		local opts = mark[4]
-		local column = opts.virt_text_win_col
+		local mark_opts = mark[4]
+		local column = mark_opts.virt_text_win_col
 
-		local color = opts.virt_text[1][2]
+		local color = mark_opts.virt_text[1][2]
 
 		-- if color == ignore_color then
 		-- if true then return marks end
@@ -125,12 +125,12 @@ function M.context_range(bufnr, startln, endln, target_column, ignore_color)
 		-- end
 
 		if column == target_column then
-			opts.virt_text_pos = 'overlay'
+			mark_opts.virt_text_pos = 'overlay'
 			table.insert(new, {
 				id = mark[1],
 				row = mark[2],
 				column = target_column,
-				opts = opts,
+				opts = mark_opts,
 			})
 		end
 	end

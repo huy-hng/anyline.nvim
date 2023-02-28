@@ -3,9 +3,11 @@ local cache = require('anyline.cache')
 local setter = require('anyline.setter')
 local context = require('anyline.context')
 local animate = require('anyline.animate')
-local opts = require('anyline.default_opts')
+local opts = require('anyline.opts').opts
 local markager = require('anyline.markager')
 local Debounce = require('anyline.debounce')
+
+local autocmd = vim.api.nvim_create_autocmd
 
 local function skip_buffer(bufnr)
 	-- TODO: include window types and other filters
@@ -46,7 +48,7 @@ function M.create()
 	local updater = Debounce(update_context, opts.debounce_time)
 	local group = vim.api.nvim_create_augroup('AnyLine', { clear = true })
 
-	vim.api.nvim_create_autocmd('WinLeave', {
+	autocmd('WinLeave', {
 		group = group,
 		callback = function(data)
 			local ctx = context.get_context_info(data.buf)
@@ -55,17 +57,17 @@ function M.create()
 		end,
 	})
 
-	vim.api.nvim_create_autocmd({ 'TextChanged', 'TextChangedI' }, {
+	autocmd({ 'TextChanged', 'TextChangedI' }, {
 		group = group,
 		callback = update,
 	})
 
-	vim.api.nvim_create_autocmd('CursorMoved', {
+	autocmd('CursorMoved', {
 		group = group,
 		callback = function(data) updater(data) end,
 	})
 
-	vim.api.nvim_create_autocmd({
+	autocmd({
 		'FileChangedShellPost',
 		'TextChanged',
 		'TextChangedI',

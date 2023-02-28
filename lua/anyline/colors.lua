@@ -1,6 +1,6 @@
 local M = {}
 
-local opts = require('anyline.default_opts')
+local opts = require('anyline.opts').opts
 local utils = require('anyline.utils')
 
 local fps = opts.fps
