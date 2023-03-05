@@ -67,3 +67,7 @@ Lazy loading should work. I use `event = 'VeryLazy'` as shown above.
 - [X] add user opts to setup function
 - [ ] create showcase demos for different animations
 - [ ] nice api for animation, so anyone can create dope looking animations
+- [ ] update context in chunks instead of entire buffer
+- [ ] disable indentline on condition (example: buffer has too many lines)
+- [ ] async update cache
+- [ ] disable if no indents are available for filetype
