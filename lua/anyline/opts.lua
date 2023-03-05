@@ -19,6 +19,7 @@ M.opts = {
 	-- other stuff
 	priority = 19, -- extmark priority
 	priority_context = 20,
+	max_lines = 1000,
 	ft_ignore = {
 		'NvimTree',
 		'TelescopePrompt',

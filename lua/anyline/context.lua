@@ -6,6 +6,7 @@ local utils = require('anyline.utils')
 local ani_manager = require('anyline.animation_manager')
 
 local function current_indentation(bufnr, line)
+	-- FIX: doesn't check if return of get_cache is nil
 	local indents = cache.get_cache(bufnr).lines[line]
 	if not indents then return -1 end
 	local column = indents[#indents]

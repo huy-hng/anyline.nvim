@@ -1,6 +1,7 @@
 local M = {}
 
 local utils = require('anyline.utils')
+local opts = require('anyline.opts').opts
 
 ---@alias line number
 ---@alias column number
@@ -14,6 +15,7 @@ local function get_treesitter(bufnr)
 	local ts_query = utils.nrequire('nvim-treesitter.query')
 	local ts_indent = utils.nrequire('nvim-treesitter.indent')
 	local use_ts_indent = ts_query and ts_indent and ts_query.has_indents(vim.bo[bufnr].filetype)
+	-- print(ts_query.has_indents(vim.bo[bufnr].filetype))
 	return ts_query, ts_indent
 end
 
@@ -112,11 +114,13 @@ end
 
 function M.update_cache(bufnr, start, stop)
 	if not vim.api.nvim_buf_is_valid(bufnr) then return end
-	local _, ts_indent = get_treesitter(bufnr)
 
-	local indent_width = get_indent_width(bufnr)
 	local lines = vim.api.nvim_buf_get_lines(bufnr, start or 0, stop or -1, false)
+	-- print(#lines)
+	-- if #lines > opts.max_lines then return end
 
+	local _, ts_indent = get_treesitter(bufnr)
+	local indent_width = get_indent_width(bufnr)
 	local cached_lines = M.cache_lines(ts_indent, indent_width, lines)
 	local converted = convert_cache_format(cached_lines)
 
