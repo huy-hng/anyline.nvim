@@ -11,9 +11,8 @@ local autocmd = vim.api.nvim_create_autocmd
 
 local function skip_buffer(bufnr)
 	-- TODO: include window types and other filters
-	local filetypes = { 'sql', 'vimwiki' }
 	local ft = vim.bo[bufnr].filetype
-	if not vim.tbl_contains(filetypes, ft) then return true end
+	if not vim.tbl_contains(opts.ft_ignore, ft) then return true end
 end
 
 local function hard_refresh(data)
@@ -27,7 +26,7 @@ local function hard_refresh(data)
 	context.show_context(bufnr)
 end
 
-local function update(data)
+local function update_lines(data)
 	local bufnr = data.buf
 	cache.update_cache(bufnr)
 	setter.update_marks(bufnr)
@@ -39,9 +38,7 @@ function M.delete() vim.api.nvim_del_augroup_by_name('AnyLine') end
 
 local function update_context(data)
 	context.update_context(data.buf, animate.show_animation, animate.hide_animation)
-	-- vim.schedule(function() --
-	-- 	animate.last_cursor_pos = vim.api.nvim_win_get_cursor(0)[1] - 1
-	-- end)
+	-- FIX: this weird hack
 	vim.defer_fn(function() --
 		animate.last_cursor_pos = vim.api.nvim_win_get_cursor(0)[1] - 1
 	end, 200)
@@ -62,7 +59,7 @@ function M.create()
 
 	autocmd({ 'TextChanged', 'TextChangedI' }, {
 		group = group,
-		callback = update,
+		callback = update_lines,
 	})
 
 	autocmd('CursorMoved', {
