@@ -1,8 +1,9 @@
 local M = {}
+local utils = require('anyline.utils')
+local Debounce = require('anyline.debounce')
 
 ----------------------------------------------Config------------------------------------------------
 
--- vim.g.column_lines = { 80, 100 }
 local default_opts = {
 	columns = { 100 },
 	column_char = '▏',
@@ -32,6 +33,7 @@ function M.setup(opts)
 end
 
 function M.start()
+	local refresh = Debounce(M.refresh, 50)
 	Augroup('ColumnLine', {
 		Autocmd('OptionSet', 'colorcolumn', M.refresh),
 		Autocmd({
@@ -43,11 +45,8 @@ function M.start()
 			'SessionLoadPost',
 			'BufWinEnter',
 			'WinEnter',
-			'WinScrolled'
-		}, M.refresh),
-		Autocmd('WinScrolled', function() 
-			-- M.get_scroll_offset()
-		end),
+			'WinScrolled',
+		}, refresh),
 	})
 end
 
@@ -55,22 +54,11 @@ function M.stop() DeleteAugroup('ColumnLine') end
 
 ---------------------------------------------Functions----------------------------------------------
 
-function M.get_scroll_offset()
-	local win = vim.fn.winsaveview()
-	local leftcol = win.leftcol
-
-	local topline = win.topline
-	local col = win.col
-	local lnum = win.lnum
-	return leftcol
-end
-
 function M.remove_colorcolumn_values()
 	for _, column in ipairs(vim.opt.colorcolumn:get()) do
 		column = tonumber(column)
 		if not vim.tbl_contains(M.opts.columns, column) then
 			table.insert(M.opts.columns, column)
-			table.insert(M.opts.columns, 'alskdj')
 		end
 	end
 
@@ -91,11 +79,9 @@ local function set_line(bufnr, column)
 	local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
 
 	for linenr, line_text in ipairs(lines) do
-		if not should_set(line_text, column) then
-			goto continue
-		end
+		if not should_set(line_text, column) then goto continue end
 
-		local offset = M.get_scroll_offset()
+		local offset = utils.get_scroll_offset()
 		vim.api.nvim_buf_set_extmark(bufnr, M.namespace, linenr - 1, 0, {
 			virt_text = { { M.opts.column_char, 'ColumnLine' } },
 			virt_text_pos = 'overlay',
@@ -117,6 +103,8 @@ local function set_line(bufnr, column)
 end
 
 function M.refresh(data)
+	-- if data.event == 'WinScrolled' and utils.get_scroll_offset() == 0 then return end
+
 	local bufnr = vim.api.nvim_get_current_buf()
 	if not vim.api.nvim_buf_is_loaded(bufnr) then return end
 
