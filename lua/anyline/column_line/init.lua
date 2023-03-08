@@ -24,29 +24,34 @@ function M.setup(opts)
 	M.namespace = vim.api.nvim_create_namespace('ColumnLine')
 	-- Highlight(M.namespace, 'ColumnLine', {})
 
-	Highlight(0, 'ColorColumn', {})
-	Highlight(0, 'ColumnLine', {
+	vim.api.nvim_set_hl(0, 'ColorColumn', {})
+	vim.api.nvim_set_hl(0, 'ColumnLine', {
 		link = 'Comment',
 		-- fg = '#45475a',
 	})
 	M.start()
 end
 
+local autocmd = vim.api.nvim_create_autocmd
+
 function M.start()
+	local group = vim.api.nvim_create_augroup('ColumnLine', { clear = true })
+
 	local refresh = Debounce(M.refresh, 50)
-	Augroup('ColumnLine', {
-		Autocmd('OptionSet', 'colorcolumn', M.refresh),
-		Autocmd({
-			'FileChangedShellPost',
-			'TextChanged',
-			'TextChangedI',
-			'CompleteChanged',
-			'VimEnter',
-			'SessionLoadPost',
-			'BufWinEnter',
-			'WinEnter',
-			'WinScrolled',
-		}, refresh),
+
+	autocmd({
+		'FileChangedShellPost',
+		'TextChanged',
+		'TextChangedI',
+		'CompleteChanged',
+		'VimEnter',
+		'SessionLoadPost',
+		'BufWinEnter',
+		'WinEnter',
+		'WinScrolled',
+	}, {
+		group = group,
+		callback = function(data) refresh(data) end,
 	})
 end
 
