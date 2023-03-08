@@ -15,6 +15,51 @@ end
 
 ---@alias context { startln: number, endln: number, column: number, bufnr: number, winid: number }
 
+local function get_context_under_cursor(bufnr)
+	bufnr = bufnr or vim.api.nvim_get_current_buf()
+	local winid = vim.api.nvim_get_current_win()
+	local cursor = vim.fn.getcurpos(winid)
+	local line = cursor[2] - 1
+	local column = cursor[5] - 1
+
+	local prev = 0
+
+	local ranges = cache.buffer_caches[bufnr].line_ranges
+
+	local indents = utils.reverse_array(vim.tbl_keys(ranges))
+
+	local found_indent
+	for _, col in ipairs(indents) do
+		if col == column or col < column then
+			print(col)
+			found_indent = col
+			break
+		end
+	end
+	print(found_indent)
+	if not found_indent then return end
+
+	for _, range in ipairs(ranges[found_indent]) do
+		-- P(range)
+		-- print(column, col)
+		-- if col == column or col < column then return col end
+	end
+end
+local i = get_context_under_cursor()
+print(i)
+
+local function find_range(bufnr, cursor, column)
+	local ranges = cache.buffer_caches[bufnr].line_ranges[column]
+	if not ranges then return end
+
+	for _, line_pair in ipairs(ranges) do
+		local startln, endln = unpack(line_pair)
+		if cursor >= startln and cursor <= endln then --
+			return startln, endln
+		end
+	end
+end
+
 ---@return context | nil
 function M.get_context_info(bufnr)
 	local winid = vim.api.nvim_get_current_win()
@@ -37,20 +82,15 @@ function M.get_context_info(bufnr)
 	local ranges = cache.buffer_caches[bufnr].line_ranges[column]
 
 	if not ranges then return end
-
-	for _, line_pair in ipairs(ranges) do
-		local startln = line_pair[1]
-		local endln = line_pair[2]
-
-		if cursor >= startln and cursor <= endln then
-			return {
-				startln = startln,
-				endln = endln,
-				column = column,
-				bufnr = bufnr,
-				winid = winid,
-			}
-		end
+	local startln, endln = find_range(bufnr, cursor, column)
+	if startln then
+		return {
+			startln = startln,
+			endln = endln,
+			column = column,
+			bufnr = bufnr,
+			winid = winid,
+		}
 	end
 end
 
