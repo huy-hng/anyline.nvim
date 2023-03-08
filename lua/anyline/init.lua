@@ -1,6 +1,6 @@
 local M = {}
 
-function M.setup(user_opts)
+local setup = vim.schedule_wrap(function(user_opts)
 	require('anyline.opts').parse_opts(user_opts or {})
 
 	local opts = require('anyline.opts').opts
@@ -9,8 +9,12 @@ function M.setup(user_opts)
 	vim.api.nvim_create_namespace('AnyLine')
 
 	require('anyline.animate').create_animations(opts.animation)
+	require('anyline.autocmds').delete()
 	require('anyline.autocmds').create()
+end)
+
+function M.setup(user_opts) --
+	setup(user_opts)
 end
--- M.setup()
 
 return M
