@@ -45,8 +45,8 @@ local function get_context_under_cursor(bufnr)
 		-- if col == column or col < column then return col end
 	end
 end
-local i = get_context_under_cursor()
-print(i)
+-- local i = get_context_under_cursor()
+-- print(i)
 
 local function find_range(bufnr, cursor, column)
 	local ranges = cache.buffer_caches[bufnr].line_ranges[column]
