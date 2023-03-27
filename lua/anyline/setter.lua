@@ -7,6 +7,7 @@ local ns = vim.api.nvim_create_namespace('AnyLine')
 
 function M.set_marks(bufnr)
 	local marks = cache.buffer_caches[bufnr]
+	if not marks then return end
 	for linenr, columns in ipairs(marks.lines) do
 		for _, col in ipairs(columns) do
 			col = col - utils.get_scroll_offset()
