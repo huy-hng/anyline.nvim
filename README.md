@@ -70,4 +70,3 @@ Lazy loading should work. I use `event = 'VeryLazy'` as shown above.
 - [ ] update context in chunks instead of entire buffer
 - [ ] disable indentline on condition (example: buffer has too many lines)
 - [ ] async update cache
-- [ ] disable if no indents are available for filetype

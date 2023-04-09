@@ -37,7 +37,8 @@ local autocmd = vim.api.nvim_create_autocmd
 function M.start()
 	local group = vim.api.nvim_create_augroup('ColumnLine', { clear = true })
 
-	local refresh = Debounce(M.refresh, 50)
+	-- local refresh = Debounce(M.refresh, 50)
+	local refresh = M.refresh
 
 	autocmd({
 		'FileChangedShellPost',
