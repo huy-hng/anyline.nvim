@@ -21,19 +21,19 @@ local markager = require('anyline.markager')
 local function delay_marks(bufnr, marks, hls, move_delay, color_delay, char)
 	local timers = {}
 	local move_timers = utils.delay_map(marks, move_delay, function(mark)
-		if not mark.opts then goto continue end
-		local color_timers = utils.delay_map(hls, color_delay, function(hl) --
-			markager.set_extmark(
-				bufnr,
-				mark.row,
-				mark.column,
-				hl,
-				char,
-				{ priority = mark.opts.priority + 1, id = mark.id }
-			)
-		end)
-		timers = table.add(timers, color_timers)
-		::continue::
+		if mark.opts then
+			local color_timers = utils.delay_map(hls, color_delay, function(hl) --
+				markager.set_extmark(
+					bufnr,
+					mark.row,
+					mark.column,
+					hl,
+					char,
+					{ priority = mark.opts.priority + 1, id = mark.id }
+				)
+			end)
+			timers = table.add(timers, color_timers)
+		end
 	end)
 	timers = table.add(timers, move_timers)
 	return timers
@@ -183,9 +183,7 @@ local function cursor_test(direction, color, type)
 	---@param ctx context
 	return function(bufnr, ctx)
 		local cursor = vim.api.nvim_win_get_cursor(0)[1] - 1
-		if type == 'hide' then
-			cursor = M.last_cursor_pos or cursor
-		end
+		if type == 'hide' then cursor = M.last_cursor_pos or cursor end
 
 		local above_start, above_end, below_start, below_end =
 			get_direction_marks(ctx, cursor, direction)
@@ -218,11 +216,6 @@ function M.no_animation(color)
 		local marks = markager.context_range(bufnr, ctx.startln, ctx.endln, ctx.column)
 		delay_marks(ctx.bufnr, marks, { color }, 0, 0)
 	end
-
-
-
-
-
 end
 
 function M.top_down(color) return directional('top_down', color) end
@@ -244,10 +237,6 @@ local animations = {
 
 function M.create_animations(animation)
 	local ani = animations[animation]
-
-
-
-
 
 	if not ani then
 		vim.notify('No such animation "' .. opts.animation .. '"', vim.log.levels.ERROR)

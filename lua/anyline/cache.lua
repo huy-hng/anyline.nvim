@@ -74,6 +74,8 @@ local function convert_cache_format(cached_lines)
 	return ranges
 end
 
+M.get_indent_width = get_indent_width
+
 function M.get_cache(bufnr)
 	bufnr = bufnr or vim.api.nvim_get_current_buf()
 	if not M.buffer_caches[bufnr] then M.update_cache(bufnr) end

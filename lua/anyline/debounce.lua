@@ -1,6 +1,5 @@
 local uv = vim.loop
 
-
 ---@class Debounce
 ---@field timer uv.uv_timer_t | nil
 ---@field fn function

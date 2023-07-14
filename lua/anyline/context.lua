@@ -5,48 +5,23 @@ local markager = require('anyline.markager')
 local utils = require('anyline.utils')
 local ani_manager = require('anyline.animation_manager')
 
-local function current_indentation(bufnr, line)
-	-- FIX: doesn't check if return of get_cache is nil
+local function current_indentation(bufnr, line, col)
 	local indents = cache.get_cache(bufnr).lines[line]
-	if not indents then return -1 end
-	local column = indents[#indents]
+	if indents == nil then return -1 end
+
+	local column
+
+	local tabs = vim.bo[bufnr].expandtab == false
+
+	for _, indent in ipairs(indents) do
+		local offset = tabs and vim.bo[bufnr].tabstop - 1 or 1
+		if col + offset > indent then column = indent end
+	end
+
 	return column or -1
 end
 
 ---@alias context { startln: number, endln: number, column: number, bufnr: number, winid: number }
-
-local function get_context_under_cursor(bufnr)
-	bufnr = bufnr or vim.api.nvim_get_current_buf()
-	local winid = vim.api.nvim_get_current_win()
-	local cursor = vim.fn.getcurpos(winid)
-	local line = cursor[2] - 1
-	local column = cursor[5] - 1
-
-	local prev = 0
-
-	local ranges = cache.buffer_caches[bufnr].line_ranges
-
-	local indents = utils.reverse_array(vim.tbl_keys(ranges))
-
-	local found_indent
-	for _, col in ipairs(indents) do
-		if col == column or col < column then
-			print(col)
-			found_indent = col
-			break
-		end
-	end
-	print(found_indent)
-	if not found_indent then return end
-
-	for _, range in ipairs(ranges[found_indent]) do
-		-- P(range)
-		-- print(column, col)
-		-- if col == column or col < column then return col end
-	end
-end
--- local i = get_context_under_cursor()
--- print(i)
 
 local function find_range(bufnr, cursor, column)
 	local ranges = cache.buffer_caches[bufnr].line_ranges[column]
@@ -63,10 +38,15 @@ end
 ---@return context | nil
 function M.get_context_info(bufnr)
 	local winid = vim.api.nvim_get_current_win()
-	local cursor = vim.api.nvim_win_get_cursor(winid)[1] - 1
+	local cursor, col = unpack(vim.api.nvim_win_get_cursor(winid))
+	cursor = cursor - 1
 
-	local column = current_indentation(bufnr, cursor)
-	local next = current_indentation(bufnr, cursor + 1)
+	local column = current_indentation(bufnr, cursor, col)
+	local line_len = math.huge
+	if vim.api.nvim_buf_is_valid(bufnr) then
+		line_len = #vim.api.nvim_buf_get_lines(bufnr, cursor, cursor + 1, true)[1]
+	end
+	local next = current_indentation(bufnr, cursor + 1, math.min(col, math.max(line_len, 1)))
 
 	if not column and not next then return end
 
@@ -77,6 +57,7 @@ function M.get_context_info(bufnr)
 	end
 
 	column = column - utils.get_scroll_offset()
+
 	if column < 0 then return end
 
 	local ranges = cache.buffer_caches[bufnr].line_ranges[column]
