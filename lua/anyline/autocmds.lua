@@ -106,7 +106,4 @@ function M.create()
 	})
 end
 
--- M.delete()
--- M.create()
-
 return M

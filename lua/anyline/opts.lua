@@ -1,6 +1,7 @@
 local M = {}
 
 M.opts = {
+	enabled = true,
 	-- visual stuff
 	indent_char = '▏', -- character to use for the line
 	highlight = 'Comment', -- color of non active indentatino lines
