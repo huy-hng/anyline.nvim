@@ -46,7 +46,7 @@ function M.get_context_info(bufnr)
 	if vim.api.nvim_buf_is_valid(bufnr) then
 		line_len = #vim.api.nvim_buf_get_lines(bufnr, cursor, cursor + 1, true)[1]
 	end
-	local next = current_indentation(bufnr, cursor + 1, math.min(col, math.max(line_len, 1)))
+	local next = current_indentation(bufnr, cursor + 1, math.min(col, line_len))
 
 	if not column and not next then return end
 
