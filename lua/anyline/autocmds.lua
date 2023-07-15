@@ -104,6 +104,15 @@ function M.create()
 		group = group,
 		callback = hard_refresh,
 	})
+
+	autocmd('OptionSet', {
+		pattern = { 'tabstop', 'shiftwidth', 'expandtab' },
+		group = group,
+		callback = function()
+			local bufnr = vim.api.nvim_get_current_buf()
+			hard_refresh { buf = bufnr }
+		end,
+	})
 end
 
 return M
