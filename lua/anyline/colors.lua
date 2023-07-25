@@ -48,8 +48,12 @@ local function interpolate_colors(color1, color2, ratio)
 		return string.format('%x', interpolated)
 	end
 
-	local c1 = separate_channels(get_hl_color(color1), true)
-	local c2 = separate_channels(get_hl_color(color2), true)
+	color1 = get_hl_color(color1)
+	color2 = get_hl_color(color2)
+	if color1 == '' or color2 == '' then return end
+
+	local c1 = separate_channels(color1, true)
+	local c2 = separate_channels(color2, true)
 
 	local r = interpol_channel(c1.r, c2.r)
 	local g = interpol_channel(c1.g, c2.g)
@@ -87,6 +91,7 @@ function M.create_colors(start_color, end_color, steps, ns)
 	local step_size = 1 / steps
 	for i = step_size, 1, step_size do
 		local between = interpolate_colors(start_color, end_color, i)
+		if not between then return end
 		-- local name = 'IndentLineFadeColor' .. string.format('%.2f', i)
 		local name = start_color .. 'To' .. end_color .. string.format('%.2f', i)
 
