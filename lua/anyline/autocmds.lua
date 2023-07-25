@@ -67,6 +67,13 @@ function M.create()
 	local context_updater = Debounce(update_context, opts.debounce_time)
 	local group = vim.api.nvim_create_augroup('AnyLine', { clear = true })
 
+	autocmd('ColorScheme', {
+		group = group,
+		callback = function()
+			vim.api.nvim_set_hl(0, 'AnyLine', { link = opts.highlight })
+			vim.api.nvim_set_hl(0, 'AnyLineContext', { link = opts.context_highlight })
+		end,
+	})
 	autocmd('WinLeave', {
 		group = group,
 		callback = function(data)
