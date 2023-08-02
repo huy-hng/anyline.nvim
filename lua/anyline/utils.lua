@@ -111,7 +111,7 @@ function M.delay_map(iterable, delay, fn, callback)
 	return timers
 end
 
-function table.copy(obj, seen)
+function M.copy(obj, seen)
 	-- Handle non-tables and previously-seen tables.
 	if type(obj) ~= 'table' then return obj end
 	if seen and seen[obj] then return seen[obj] end
@@ -126,7 +126,7 @@ function table.copy(obj, seen)
 	return setmetatable(res, getmetatable(obj))
 end
 
-function table.add(...)
+function M.add(...)
 	local new = select(1, ...)
 	new = type(new) == 'table' and new or { new }
 
@@ -144,7 +144,7 @@ function table.add(...)
 	return new
 end
 
-function math.clamp(x, lower, upper) --
+function M.clamp(x, lower, upper) --
 	return math.min(upper, math.max(x, lower))
 end
 

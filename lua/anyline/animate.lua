@@ -32,10 +32,10 @@ local function delay_marks(bufnr, marks, hls, move_delay, color_delay, char)
 				{ priority = mark.opts.priority + 1, id = mark.id }
 			)
 		end)
-		timers = table.add(timers, color_timers)
+		timers = utils.add(timers, color_timers)
 		::continue::
 	end)
-	timers = table.add(timers, move_timers)
+	timers = utils.add(timers, move_timers)
 	return timers
 end
 
@@ -54,7 +54,7 @@ local function get_direction_marks(ctx, cursor, direction)
 	local below_end
 
 	local curr = vim.api.nvim_win_get_cursor(0)[1] - 1
-	local position = math.clamp((curr - startln) / (endln - startln), 0, 1)
+	local position = utils.clamp((curr - startln) / (endln - startln), 0, 1)
 
 	--stylua: ignore start
 	if from_cursor then
@@ -169,7 +169,7 @@ local function cursor_animation(direction, color, type)
 		local timers_above = delay_marks(ctx.bufnr, marks_above, hls, delay_above, color_delay)
 		local timers_below = delay_marks(ctx.bufnr, marks_below, hls, delay_below, color_delay)
 
-		return table.add(timers_above, timers_below)
+		return utils.add(timers_above, timers_below)
 	end
 end
 
@@ -207,7 +207,7 @@ local function cursor_test(direction, color, type)
 		local timers_below =
 			delay_marks(ctx.bufnr, marks_below, hls_below, delay_below, color_delay)
 
-		return table.add(timers_above, timers_below)
+		return utils.add(timers_above, timers_below)
 	end
 end
 

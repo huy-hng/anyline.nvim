@@ -25,7 +25,7 @@ end
 
 function M.update_marks(bufnr)
 	local lines = cache.buffer_caches[bufnr].lines
-	local copy = table.copy(lines)
+	local copy = utils.copy(lines)
 
 	-- {mark_id, row, col, opts}
 	local marks = vim.api.nvim_buf_get_extmarks(bufnr, ns, { 0, 0 }, { -1, 0 }, { details = true })
