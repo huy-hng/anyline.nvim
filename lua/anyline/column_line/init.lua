@@ -114,8 +114,8 @@ function M.refresh(data)
 	local bufnr = vim.api.nvim_get_current_buf()
 	if not vim.api.nvim_buf_is_loaded(bufnr) then return end
 
-	local modifiable = vim.api.nvim_buf_get_option(bufnr, 'modifiable')
-	local wrong_filetype = vim.tbl_contains(M.opts.filetype_blacklist, vim.bo[bufnr].filetype) -- local wrong_filetype = vim.tbl_contains(M.opts.filetype_blacklist, vim.bo[bufnr].filetype)
+	local modifiable = vim.bo[bufnr].modifiable
+	local wrong_filetype = vim.tbl_contains(M.opts.filetype_blacklist, vim.bo[bufnr].filetype)
 	local right_buftype = vim.tbl_contains(M.opts.buftype_whitelist, vim.bo[bufnr].buftype)
 	local right_wintype = vim.tbl_contains(M.opts.wintype_whitelist, Util.win_type())
 
