@@ -97,8 +97,7 @@ function M.create()
 		'TextChanged',
 		'TextChangedI',
 		'CompleteChanged',
-		'BufWinEnter',
-		'BufWritePost',
+		'BufReadPost',
 		'SessionLoadPost',
 	}, {
 		group = group,
