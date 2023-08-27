@@ -9,11 +9,8 @@ local default_opts = {
 	column_char = '▏',
 	wintype_whitelist = { '' },
 	buftype_whitelist = { '' },
-	filetype_blacklist = {
-		'buffer_manager',
-		'harpoon',
-		'TelescopePrompt',
-	},
+	buftype_blacklist = { '' },
+	filetype_blacklist = {},
 }
 
 M.opts = default_opts
@@ -25,10 +22,7 @@ function M.setup(opts)
 	-- Highlight(M.namespace, 'ColumnLine', {})
 
 	vim.api.nvim_set_hl(0, 'ColorColumn', {})
-	vim.api.nvim_set_hl(0, 'ColumnLine', {
-		link = 'Comment',
-		-- fg = '#45475a',
-	})
+	vim.api.nvim_set_hl(0, 'ColumnLine', { link = 'NonText' })
 	M.start()
 end
 
@@ -37,7 +31,6 @@ local autocmd = vim.api.nvim_create_autocmd
 function M.start()
 	local group = vim.api.nvim_create_augroup('ColumnLine', { clear = true })
 
-	-- local refresh = Debounce(M.refresh, 50)
 	local refresh = M.refresh
 
 	autocmd({
@@ -94,15 +87,6 @@ local function set_line(bufnr, column)
 			hl_mode = 'combine',
 			virt_text_win_col = column - offset,
 			priority = 1,
-			-- hl_group = 'NormalFloat',
-			-- end_col = 100,
-			-- hl_eol = true,
-			-- virt_lines = { { { column_char, 'ColumnLine' } } },
-			-- line_hl_group = 'Search',
-			-- cursorline_hl_group = 'Visual',
-			-- conceal = 'a',
-			-- sign_text = 'si'
-			-- strict = false,
 		})
 		::continue::
 	end
@@ -111,23 +95,26 @@ end
 function M.refresh(data)
 	-- if data.event == 'WinScrolled' and utils.get_scroll_offset() == 0 then return end
 
-	local bufnr = vim.api.nvim_get_current_buf()
+	local bufnr = data.buf
 	if not vim.api.nvim_buf_is_loaded(bufnr) then return end
 
 	local modifiable = vim.bo[bufnr].modifiable
-	local wrong_filetype = vim.tbl_contains(M.opts.filetype_blacklist, vim.bo[bufnr].filetype)
-	local right_buftype = vim.tbl_contains(M.opts.buftype_whitelist, vim.bo[bufnr].buftype)
-	local right_wintype = vim.tbl_contains(M.opts.wintype_whitelist, Util.win_type())
+	local ft = vim.bo[bufnr].filetype
+	local bt = vim.bo[bufnr].buftype
+	local wt = Util.win_type()
 
-	if wrong_filetype or not right_buftype or not right_wintype or not modifiable then
-		vim.api.nvim_win_set_hl_ns(0, M.namespace)
-		return
-	end
-
-	vim.api.nvim_win_set_hl_ns(0, 0)
+	local black_file = table.contains(M.opts.filetype_blacklist, ft)
+	local white_buf = table.contains(M.opts.buftype_whitelist, bt)
+	local black_buf = table.contains(M.opts.buftype_blacklist, bt)
+	local white_win = table.contains(M.opts.wintype_whitelist, wt)
 
 	if M.namespace then vim.api.nvim_buf_clear_namespace(bufnr, M.namespace, 0, -1) end
 
+	if black_file or black_buf or not white_buf or not white_win or not modifiable then
+		-- vim.api.nvim_win_set_hl_ns(0, M.namespace)
+		return
+	end
+	-- vim.api.nvim_win_set_hl_ns(0, 0)
 	for _, column in ipairs(M.opts.columns) do
 		set_line(bufnr, tonumber(column))
 	end
