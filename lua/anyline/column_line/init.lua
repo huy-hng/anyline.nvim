@@ -11,6 +11,7 @@ local default_opts = {
 	buftype_whitelist = { '' },
 	buftype_blacklist = { '' },
 	filetype_blacklist = {},
+	max_lines = 1024,
 }
 
 M.opts = default_opts
@@ -49,13 +50,23 @@ function M.start()
 	})
 end
 
-function M.stop() DeleteAugroup('ColumnLine') end
+function M.stop()
+	-- DeleteAugroup('ColumnLine')
+	pcall(vim.api.nvim_del_augroup_by_name, 'ColumnLine')
+
+	local buffers = vim.api.nvim_list_bufs()
+	for _, bufnr in ipairs(buffers) do
+		if vim.api.nvim_buf_is_loaded(bufnr) then
+			vim.api.nvim_buf_clear_namespace(bufnr, M.namespace, 0, -1)
+		end
+	end
+end
 
 ---------------------------------------------Functions----------------------------------------------
 
 function M.remove_colorcolumn_values()
-	for _, column in ipairs(vim.opt.colorcolumn:get()) do
-		column = tonumber(column)
+	for _, col in ipairs(vim.opt.colorcolumn:get()) do
+		local column = tonumber(col)
 		if not vim.tbl_contains(M.opts.columns, column) then
 			table.insert(M.opts.columns, column)
 		end
@@ -97,6 +108,9 @@ function M.refresh(data)
 
 	local bufnr = data.buf
 	if not vim.api.nvim_buf_is_loaded(bufnr) then return end
+
+	local line_count = vim.api.nvim_buf_line_count(bufnr)
+	if line_count > M.opts.max_lines then return end
 
 	local modifiable = vim.bo[bufnr].modifiable
 	local ft = vim.bo[bufnr].filetype

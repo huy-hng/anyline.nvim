@@ -40,7 +40,7 @@ local function main()
 		-- api.nvim_buf_set_name(bufnr, 'Column Line')
 	end
 
-	api.nvim_buf_set_lines(bufnr, 0, -1, false, Repeat({ '▏' }, popup_config.height))
+	api.nvim_buf_set_lines(bufnr, 0, -1, false, nvim.Repeat({ '▏' }, popup_config.height))
 	local winid = api.nvim_open_win(bufnr, true, popup_config)
 
 	api.nvim_win_set_option(winid, 'winblend', 100)

@@ -1,5 +1,8 @@
 local M = {}
 
+-- TODO:
+-- disable this plugin on a per buffer basis
+
 local setup = vim.schedule_wrap(function(user_opts)
 	require('anyline.opts').parse_opts(user_opts or {})
 
@@ -9,8 +12,11 @@ local setup = vim.schedule_wrap(function(user_opts)
 	vim.api.nvim_create_namespace('AnyLine')
 
 	require('anyline.animate').create_animations(opts.animation)
-	require('anyline.autocmds').delete()
-	require('anyline.autocmds').create()
+	require('anyline.autocmds').stop()
+	require('anyline.autocmds').start()
+
+	vim.api.nvim_create_user_command('AnylineDisable', require('anyline.autocmds').stop, {})
+	vim.api.nvim_create_user_command('AnylineEnable', require('anyline.autocmds').start, {})
 end)
 
 function M.setup(user_opts) --

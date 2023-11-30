@@ -87,6 +87,8 @@ end
 
 function M.cache_lines(ts_indent, indent_width, lines)
 	local cached_lines = {}
+	if not ts_indent then return cached_lines end
+
 	-- loop through lines
 	for linenr, line_text in ipairs(lines) do
 		cached_lines[linenr] = {}
