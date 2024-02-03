@@ -34,6 +34,11 @@ require('anyline').setup()
 Or just put `config = true` in lazy as shown above.  
 Lazy loading should work. I use `event = 'VeryLazy'` as shown above.
 
+
+### Commands
+There are the commands `AnylineEnable` and `AnylineDisable` to disable anyline.
+
+
 ### Config
 ```lua
 {
@@ -70,3 +75,4 @@ Lazy loading should work. I use `event = 'VeryLazy'` as shown above.
 - [ ] update context in chunks instead of entire buffer
 - [ ] disable indentline on condition (example: buffer has too many lines)
 - [ ] async update cache
+- [ ] enable / disable anyline per buffer
