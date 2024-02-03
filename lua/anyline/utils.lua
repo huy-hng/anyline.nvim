@@ -111,21 +111,6 @@ function M.delay_map(iterable, delay, fn, callback)
 	return timers
 end
 
-function M.copy(obj, seen)
-	-- Handle non-tables and previously-seen tables.
-	if type(obj) ~= 'table' then return obj end
-	if seen and seen[obj] then return seen[obj] end
-
-	-- New table; mark it as seen and copy recursively.
-	local s = seen or {}
-	local res = {}
-	s[obj] = res
-	for k, v in pairs(obj) do
-		res[table.copy(k, s)] = table.copy(v, s)
-	end
-	return setmetatable(res, getmetatable(obj))
-end
-
 function M.add(...)
 	local new = select(1, ...)
 	new = type(new) == 'table' and new or { new }
