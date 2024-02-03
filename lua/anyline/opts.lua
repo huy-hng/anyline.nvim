@@ -3,7 +3,7 @@ local M = {}
 M.opts = {
 	-- visual stuff
 	indent_char = '▏', -- character to use for the line
-	highlight = 'Comment', -- color of non active indentatino lines
+	highlight = 'NonText', -- color of non active indentation lines
 	context_highlight = 'ModeMsg', -- color of the context under the cursor
 
 	-- animation stuff / fine tuning
@@ -17,9 +17,9 @@ M.opts = {
 	trail_length = 20, -- how long the trail / fade transition should be
 
 	-- other stuff
+	max_lines = 1024, -- if the buffer exceeds this number of lines, anyline will be disabled
 	priority = 19, -- extmark priority
 	priority_context = 20,
-	max_lines = 1024,
 	ft_ignore = {
 		'NvimTree',
 		'TelescopePrompt',

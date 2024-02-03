@@ -1,8 +1,5 @@
 local M = {}
 
--- TODO:
--- disable this plugin on a per buffer basis
-
 local setup = vim.schedule_wrap(function(user_opts)
 	require('anyline.opts').parse_opts(user_opts or {})
 
