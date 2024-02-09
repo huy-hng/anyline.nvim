@@ -44,7 +44,7 @@ There are the commands `AnylineEnable` and `AnylineDisable` to disable anyline.
 {
     -- visual stuff
     indent_char = '▏', -- character to use for the line
-    highlight = 'Comment', -- color of non active indentation lines
+    highlight = 'NonText', -- color of non active indentation lines
     context_highlight = 'ModeMsg', -- color of the context under the cursor
 
     -- animation stuff / fine tuning
@@ -58,6 +58,7 @@ There are the commands `AnylineEnable` and `AnylineDisable` to disable anyline.
     trail_length = 20, -- how long the trail / fade transition should be
 
     -- other stuff
+    max_lines = 1024, -- if the buffer exceeds this number of lines, anyline will be disabled
     priority = 19, -- extmark priority
     priority_context = 20,
     ft_ignore = {
