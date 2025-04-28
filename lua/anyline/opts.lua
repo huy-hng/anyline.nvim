@@ -24,6 +24,7 @@ M.opts = {
 		'NvimTree',
 		'TelescopePrompt',
 		'alpha',
+		'checkhealth',
 	},
 }
 
