@@ -21,7 +21,7 @@ Use the package manager of your choice
 require('lazy').setup({
     {
         'huy-hng/anyline.nvim',
-        dependencies = { 'nvim-treesitter/nvim-treesitter' }
+        dependencies = { 'nvim-treesitter/nvim-treesitter' },
         config = true,
         event = 'VeryLazy',
     },
