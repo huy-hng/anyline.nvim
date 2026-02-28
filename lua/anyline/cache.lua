@@ -94,7 +94,9 @@ function M.cache_lines(ts_indent, indent_width, lines)
 		cached_lines[linenr] = {}
 
 		-- if indent in line is 0, skip line
-		local total_indent = ts_indent.get_indent(linenr)
+		local success, total_indent = pcall(ts_indent.get_indent, linenr)
+		if not success then return cached_lines end
+		-- local total_indent = ts_indent.get_indent(linenr)
 		if total_indent == 0 then goto continue end
 
 		local indents = total_indent / indent_width
